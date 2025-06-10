@@ -1,31 +1,39 @@
 const mongoose = require('mongoose');
 
 const projectSchema = new mongoose.Schema({
-    title: {
+    name: {
         type: String,
-        required: true,
+        required: [true, 'Project name is required'],
         trim: true
     },
     description: {
         type: String,
-        required: true
+        required: [true, 'Project description is required']
+    },
+    status: {
+        type: String,
+        enum: ['Active', 'On Hold', 'Completed', 'Cancelled'],
+        default: 'Active'
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    teamMembers: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        role: {
-            type: String,
-            enum: ['manager', 'developer', 'viewer'],
-            default: 'developer'
+    teamMembers: [
+        {
+            name: {
+                type: String,
+                required: [true, 'Team member name is required']
+            },
+            email: {
+                type: String,
+                required: [true, 'Team member email is required'],
+                trim: true,
+                lowercase: true
+            }
         }
-    }],
+    ],
     createdAt: {
         type: Date,
         default: Date.now
@@ -41,5 +49,11 @@ projectSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();
 });
+
+// Remove sensitive data when converting to JSON
+projectSchema.methods.toJSON = function () {
+    const project = this.toObject();
+    return project;
+};
 
 module.exports = mongoose.model('Project', projectSchema); 

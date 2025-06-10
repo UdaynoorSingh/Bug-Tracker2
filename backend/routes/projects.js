@@ -7,21 +7,32 @@ const auth = require('../middleware/auth');
 // Create project
 router.post('/', auth, async (req, res) => {
     try {
-        const { title, description, teamMembers } = req.body;
+        const { name, description, status, teamMembers } = req.body;
+
+        // Validate input
+        if (!name || !description) {
+            return res.status(400).json({ message: 'Name and description are required' });
+        }
 
         const project = new Project({
-            title,
+            name,
             description,
-            owner: req.user._id,
-            teamMembers: [
-                { user: req.user._id, role: 'manager' },
-                ...(teamMembers || [])
-            ]
+            status: status || 'Active',
+            owner: req.user.userId,
+            teamMembers: teamMembers || [] // Use teamMembers from request body or empty array
         });
 
         await project.save();
+
+        // Populate owner
+        await project.populate('owner', 'name email');
+
         res.status(201).json(project);
     } catch (error) {
+        console.error('Create project error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Error creating project' });
     }
 });
@@ -31,14 +42,16 @@ router.get('/', auth, async (req, res) => {
     try {
         const projects = await Project.find({
             $or: [
-                { owner: req.user._id },
-                { 'teamMembers.user': req.user._id }
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
             ]
-        }).populate('owner', 'name email')
-            .populate('teamMembers.user', 'name email');
+        })
+            .populate('owner', 'name email')
+            .sort({ updatedAt: -1 });
 
         res.json(projects);
     } catch (error) {
+        console.error('Fetch projects error:', error);
         res.status(500).json({ message: 'Error fetching projects' });
     }
 });
@@ -49,11 +62,11 @@ router.get('/:id', auth, async (req, res) => {
         const project = await Project.findOne({
             _id: req.params.id,
             $or: [
-                { owner: req.user._id },
-                { 'teamMembers.user': req.user._id }
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
             ]
-        }).populate('owner', 'name email')
-            .populate('teamMembers.user', 'name email');
+        })
+            .populate('owner', 'name email');
 
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
@@ -61,6 +74,7 @@ router.get('/:id', auth, async (req, res) => {
 
         res.json(project);
     } catch (error) {
+        console.error('Fetch project error:', error);
         res.status(500).json({ message: 'Error fetching project' });
     }
 });
@@ -71,8 +85,8 @@ router.put('/:id', auth, async (req, res) => {
         const project = await Project.findOne({
             _id: req.params.id,
             $or: [
-                { owner: req.user._id },
-                { 'teamMembers.user': req.user._id, 'teamMembers.role': 'manager' }
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
             ]
         });
 
@@ -81,11 +95,24 @@ router.put('/:id', auth, async (req, res) => {
         }
 
         const updates = Object.keys(req.body);
+        const allowedUpdates = ['name', 'description', 'status'];
+        const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+
+        if (!isValidOperation) {
+            return res.status(400).json({ message: 'Invalid updates' });
+        }
+
         updates.forEach(update => project[update] = req.body[update]);
         await project.save();
 
+        await project.populate('owner', 'name email');
+
         res.json(project);
     } catch (error) {
+        console.error('Update project error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Error updating project' });
     }
 });
@@ -95,16 +122,17 @@ router.delete('/:id', auth, async (req, res) => {
     try {
         const project = await Project.findOne({
             _id: req.params.id,
-            owner: req.user._id
+            owner: req.user.userId
         });
 
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        await project.remove();
+        await project.deleteOne();
         res.json({ message: 'Project deleted' });
     } catch (error) {
+        console.error('Delete project error:', error);
         res.status(500).json({ message: 'Error deleting project' });
     }
 });
@@ -113,11 +141,16 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/members', auth, async (req, res) => {
     try {
         const { email, role } = req.body;
+
+        if (!email || !role) {
+            return res.status(400).json({ message: 'Email and role are required' });
+        }
+
         const project = await Project.findOne({
             _id: req.params.id,
             $or: [
-                { owner: req.user._id },
-                { 'teamMembers.user': req.user._id, 'teamMembers.role': 'manager' }
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
             ]
         });
 
@@ -142,8 +175,11 @@ router.post('/:id/members', auth, async (req, res) => {
         project.teamMembers.push({ user: user._id, role });
         await project.save();
 
+        await project.populate('owner', 'name email');
+
         res.json(project);
     } catch (error) {
+        console.error('Add team member error:', error);
         res.status(500).json({ message: 'Error adding team member' });
     }
 });
@@ -154,8 +190,8 @@ router.delete('/:id/members/:userId', auth, async (req, res) => {
         const project = await Project.findOne({
             _id: req.params.id,
             $or: [
-                { owner: req.user._id },
-                { 'teamMembers.user': req.user._id, 'teamMembers.role': 'manager' }
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
             ]
         });
 
@@ -168,8 +204,12 @@ router.delete('/:id/members/:userId', auth, async (req, res) => {
         );
 
         await project.save();
+
+        await project.populate('owner', 'name email');
+
         res.json(project);
     } catch (error) {
+        console.error('Remove team member error:', error);
         res.status(500).json({ message: 'Error removing team member' });
     }
 });

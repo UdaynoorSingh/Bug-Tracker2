@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 const ProjectDetails = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [project, setProject] = useState(null);
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -84,15 +85,24 @@ const ProjectDetails = () => {
                 <div className="px-4 py-6 sm:px-0">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{project?.title}</h2>
-                            <p className="mt-1 text-sm text-gray-500">{project?.description}</p>
+                            <h2 className="text-3xl font-extrabold text-blue-700 mb-1">{project?.name}</h2>
+                            <div className="h-1 w-16 bg-blue-400 rounded mb-2"></div>
+                            <p className="mt-1 text-md text-gray-600">{project?.description}</p>
                         </div>
-                        <Link
-                            to={`/projects/${id}/tickets/new`}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-                        >
-                            Create Ticket
-                        </Link>
+                        <div className="flex flex-col items-end space-y-2">
+                            <button
+                                onClick={() => navigate('/projects/new')}
+                                className="mb-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 focus:outline-none"
+                            >
+                                Back to Create Project
+                            </button>
+                            <Link
+                                to={`/projects/${id}/tickets/new`}
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                            >
+                                Create Ticket
+                            </Link>
+                        </div>
                     </div>
 
                     {error && (
@@ -138,10 +148,10 @@ const ProjectDetails = () => {
                                                                     <div className="mt-2 flex items-center justify-between">
                                                                         <span
                                                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ticket.priority === 'high'
-                                                                                    ? 'bg-red-100 text-red-800'
-                                                                                    : ticket.priority === 'medium'
-                                                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                                                        : 'bg-green-100 text-green-800'
+                                                                                ? 'bg-red-100 text-red-800'
+                                                                                : ticket.priority === 'medium'
+                                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                                    : 'bg-green-100 text-green-800'
                                                                                 }`}
                                                                         >
                                                                             {ticket.priority}

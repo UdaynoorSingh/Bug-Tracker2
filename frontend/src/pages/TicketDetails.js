@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import Modal from 'react-modal';
 
 const TicketDetails = () => {
     const { id } = useParams();
@@ -11,11 +12,21 @@ const TicketDetails = () => {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
-    const { user } = useAuth();
+    // const { user } = useAuth();
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editFields, setEditFields] = useState({ title: '', description: '', priority: '', status: '', assignee: '' });
+    const [teamMembers, setTeamMembers] = useState([]);
 
     useEffect(() => {
         fetchTicket();
     }, [id]);
+
+    useEffect(() => {
+        if (ticket?.project) {
+            axios.get(`http://localhost:5000/api/projects/${ticket.project}`)
+                .then(res => setTeamMembers(res.data.teamMembers || []));
+        }
+    }, [ticket?.project]);
 
     const fetchTicket = async () => {
         try {
@@ -68,6 +79,40 @@ const TicketDetails = () => {
         }
     };
 
+    const openEditModal = () => {
+        setEditFields({
+            title: ticket.title,
+            description: ticket.description,
+            priority: ticket.priority,
+            status: ticket.status,
+            assignee: ticket.assignee?.email || ''
+        });
+        setEditModalOpen(true);
+    };
+    const closeEditModal = () => setEditModalOpen(false);
+
+    const handleEditChange = (field, value) => {
+        setEditFields({ ...editFields, [field]: value });
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        const selectedAssignee = teamMembers.find(tm => tm.email === editFields.assignee);
+        try {
+            await axios.put(`http://localhost:5000/api/tickets/${id}`, {
+                title: editFields.title,
+                description: editFields.description,
+                priority: editFields.priority,
+                status: editFields.status,
+                assignee: selectedAssignee
+            });
+            setTicket({ ...ticket, ...editFields, assignee: selectedAssignee });
+            setEditModalOpen(false);
+        } catch (error) {
+            setError('Failed to update ticket');
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -85,12 +130,18 @@ const TicketDetails = () => {
                             {ticket?.title}
                         </h2>
                     </div>
-                    <div className="mt-4 flex md:mt-0 md:ml-4">
+                    <div className="mt-4 flex md:mt-0 md:ml-4 space-x-2">
                         <button
                             onClick={() => navigate(`/projects/${ticket?.project}`)}
                             className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                         >
                             Back to Project
+                        </button>
+                        <button
+                            onClick={openEditModal}
+                            className="inline-flex items-center px-4 py-2 border border-blue-500 shadow-sm text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            Edit Ticket
                         </button>
                     </div>
                 </div>
@@ -186,6 +237,99 @@ const TicketDetails = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                isOpen={editModalOpen}
+                onRequestClose={closeEditModal}
+                contentLabel="Edit Ticket"
+                className="fixed inset-0 flex items-center justify-center z-50"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-30 z-40"
+                ariaHideApp={false}
+            >
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg">
+                    <h2 className="text-xl font-bold mb-4">Edit Ticket</h2>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Title</label>
+                            <input
+                                type="text"
+                                value={editFields.title}
+                                onChange={e => handleEditChange('title', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea
+                                value={editFields.description}
+                                onChange={e => handleEditChange('description', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                rows={3}
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Priority</label>
+                                <select
+                                    value={editFields.priority}
+                                    onChange={e => handleEditChange('priority', e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Status</label>
+                                <select
+                                    value={editFields.status}
+                                    onChange={e => handleEditChange('status', e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                >
+                                    <option value="todo">To Do</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Assignee</label>
+                            <select
+                                value={editFields.assignee}
+                                onChange={e => handleEditChange('assignee', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                required
+                            >
+                                <option value="">Select team member</option>
+                                {teamMembers.map(tm => (
+                                    <option key={tm.email} value={tm.email}>
+                                        {tm.name} ({tm.email})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                type="button"
+                                onClick={closeEditModal}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </div>
     );
 };

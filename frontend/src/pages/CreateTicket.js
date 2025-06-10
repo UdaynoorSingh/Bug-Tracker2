@@ -7,22 +7,47 @@ const CreateTicket = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('medium');
-    const [type, setType] = useState('bug');
+    const [assignee, setAssignee] = useState('');
+    const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [comment, setComment] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Fetch project to get team members
+        const fetchProject = async () => {
+            try {
+                const response = await axios.get(`http://localhost:5000/api/projects/${projectId}`);
+                setTeamMembers(response.data.teamMembers || []);
+            } catch (err) {
+                setError('Failed to fetch project team members');
+            }
+        };
+        fetchProject();
+    }, [projectId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        if (!assignee) {
+            setError('Please select an assignee.');
+            return;
+        }
+        const selectedAssignee = teamMembers.find(tm => tm.email === assignee);
+        if (!selectedAssignee) {
+            setError('Invalid assignee selected.');
+            return;
+        }
         try {
-            setError('');
             setLoading(true);
             await axios.post('http://localhost:5000/api/tickets', {
                 title,
                 description,
                 priority,
-                type,
+                assignee: selectedAssignee,
                 project: projectId,
+                comment: comment.trim() ? comment : undefined
             });
             navigate(`/projects/${projectId}`);
         } catch (error) {
@@ -86,24 +111,24 @@ const CreateTicket = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div>
-                                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                                        Type
-                                    </label>
-                                    <select
-                                        id="type"
-                                        name="type"
-                                        value={type}
-                                        onChange={(e) => setType(e.target.value)}
-                                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                                    >
-                                        <option value="bug">Bug</option>
-                                        <option value="feature">Feature</option>
-                                        <option value="task">Task</option>
-                                    </select>
+                            <div>
+                                <label htmlFor="comment" className="block text-sm font-medium text-gray-700">
+                                    Initial Comment (optional)
+                                </label>
+                                <div className="mt-1">
+                                    <textarea
+                                        id="comment"
+                                        name="comment"
+                                        rows={3}
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                        placeholder="Add an initial comment..."
+                                    />
                                 </div>
+                            </div>
 
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <div>
                                     <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
                                         Priority
@@ -119,6 +144,26 @@ const CreateTicket = () => {
                                         <option value="medium">Medium</option>
                                         <option value="high">High</option>
                                         <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="assignee" className="block text-sm font-medium text-gray-700">
+                                        Assignee
+                                    </label>
+                                    <select
+                                        id="assignee"
+                                        name="assignee"
+                                        value={assignee}
+                                        onChange={(e) => setAssignee(e.target.value)}
+                                        required
+                                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                                    >
+                                        <option value="">Select team member</option>
+                                        {teamMembers.map((tm) => (
+                                            <option key={tm.email} value={tm.email}>
+                                                {tm.name} ({tm.email})
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

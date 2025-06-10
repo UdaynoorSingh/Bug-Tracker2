@@ -30,33 +30,19 @@ const ticketSchema = new mongoose.Schema({
         enum: ['bug', 'feature', 'task'],
         default: 'bug'
     },
+    assignee: {
+        name: { type: String, required: true },
+        email: { type: String, required: true }
+    },
     reporter: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    assignee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
     comments: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        text: String,
-        createdAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-    attachments: [{
-        filename: String,
-        path: String,
-        uploadedAt: {
-            type: Date,
-            default: Date.now
-        }
+        user: { type: String, required: true },
+        text: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now }
     }],
     createdAt: {
         type: Date,

@@ -7,16 +7,20 @@ const auth = require('../middleware/auth');
 // Register
 router.post('/register', async (req, res) => {
     try {
+        console.log('Registration request received:', { ...req.body, password: '[REDACTED]' });
+
         const { name, email, password } = req.body;
 
         // Validate input
         if (!name || !email || !password) {
+            console.log('Missing required fields');
             return res.status(400).json({ message: 'All fields are required' });
         }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
+            console.log('User already exists:', email);
             return res.status(400).json({ message: 'User already exists' });
         }
 
@@ -28,6 +32,7 @@ router.post('/register', async (req, res) => {
         });
 
         await user.save();
+        console.log('User created successfully:', email);
 
         // Generate token
         const token = jwt.sign(
@@ -46,7 +51,13 @@ router.post('/register', async (req, res) => {
     } catch (error) {
         console.error('Registration error:', error);
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: error.message });
+            return res.status(400).json({
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Email already exists' });
         }
         res.status(500).json({ message: 'Error creating user' });
     }
@@ -55,24 +66,31 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
     try {
+        console.log('Login request received:', { ...req.body, password: '[REDACTED]' });
+
         const { email, password } = req.body;
 
         // Validate input
         if (!email || !password) {
+            console.log('Missing email or password');
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
         // Find user
         const user = await User.findOne({ email });
         if (!user) {
+            console.log('User not found:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Check password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
+            console.log('Invalid password for user:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+
+        console.log('User logged in successfully:', email);
 
         // Generate token
         const token = jwt.sign(
