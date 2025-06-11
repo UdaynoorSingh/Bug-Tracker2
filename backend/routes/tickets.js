@@ -36,7 +36,8 @@ router.post('/', auth, async (req, res) => {
             project,
             priority,
             assignee,
-            reporter: req.user.userId
+            reporter: req.user.userId,
+            status: req.body.status || 'todo'
         };
         if (comment && comment.trim()) {
             ticketData.comments = [{ user: req.user.userId, text: comment.trim() }];

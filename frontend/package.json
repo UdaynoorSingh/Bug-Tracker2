@@ -4,11 +4,11 @@
   "private": true,
   "dependencies": {
     "@headlessui/react": "^1.7.17",
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.0.18",
     "@tailwindcss/forms": "^0.5.7",
     "axios": "^1.6.2",
     "react": "^18.2.0",
-    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-modal": "^3.16.3",
     "react-router-dom": "^6.20.0",
