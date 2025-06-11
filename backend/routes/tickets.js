@@ -120,6 +120,14 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(403).json({ message: 'Access denied to ticket' });
         }
 
+        // Only allow specific fields to be updated
+        const allowedUpdates = ['title', 'description', 'status', 'priority', 'assignee'];
+        allowedUpdates.forEach(field => {
+            if (req.body[field] !== undefined) {
+                ticket[field] = req.body[field];
+            }
+        });
+
         // If updating assignee, validate
         if (req.body.assignee) {
             const isTeamMember = project.teamMembers.some(
@@ -130,13 +138,10 @@ router.put('/:id', auth, async (req, res) => {
             }
         }
 
-        const updates = Object.keys(req.body);
-        updates.forEach(update => ticket[update] = req.body[update]);
         await ticket.save();
-
         res.json(ticket);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating ticket' });
+        res.status(500).json({ message: 'Error updating ticket', error: error.message });
     }
 });
 
@@ -178,11 +183,33 @@ router.post('/:id/comments', auth, async (req, res) => {
         if (!req.body.text || !req.body.text.trim()) {
             return res.status(400).json({ message: 'Comment text is required' });
         }
-        ticket.comments.push({ user: req.user.userId, text: req.body.text.trim() });
+        // Log user info for debugging
+        console.log('Adding comment as user:', req.user);
+        ticket.comments.push({
+            user: {
+                name: req.user.name,
+                email: req.user.email
+            },
+            text: req.body.text.trim()
+        });
         await ticket.save();
-        res.json(ticket);
+        res.json(ticket.comments);
     } catch (error) {
-        res.status(500).json({ message: 'Error adding comment' });
+        console.error('Error adding comment:', error);
+        res.status(500).json({ message: 'Error adding comment', error: error.message });
+    }
+});
+
+// Get all comments for a ticket
+router.get('/:id/comments', auth, async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        res.json(ticket.comments);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching comments' });
     }
 });
 

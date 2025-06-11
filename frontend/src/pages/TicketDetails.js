@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext';
 import Modal from 'react-modal';
 
 const TicketDetails = () => {
@@ -16,9 +16,14 @@ const TicketDetails = () => {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editFields, setEditFields] = useState({ title: '', description: '', priority: '', status: '', assignee: '' });
     const [teamMembers, setTeamMembers] = useState([]);
+    const [comments, setComments] = useState([]);
 
     useEffect(() => {
         fetchTicket();
+        fetchComments();
+        const interval = setInterval(fetchComments, 3000); // Poll every 3s
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     useEffect(() => {
@@ -36,6 +41,15 @@ const TicketDetails = () => {
             setError('Failed to fetch ticket details');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchComments = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/tickets/${id}/comments`);
+            setComments(response.data);
+        } catch (error) {
+            // Optionally handle error
         }
     };
 
@@ -64,14 +78,13 @@ const TicketDetails = () => {
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
         if (!comment.trim()) return;
-
         try {
             setSubmitting(true);
             await axios.post(`http://localhost:5000/api/tickets/${id}/comments`, {
                 text: comment,
             });
             setComment('');
-            fetchTicket(); // Refresh ticket to get new comment
+            fetchComments(); // Refresh comments
         } catch (error) {
             setError('Failed to add comment');
         } finally {
@@ -193,11 +206,11 @@ const TicketDetails = () => {
                         <div className="mt-6">
                             <h3 className="text-lg font-medium text-gray-900">Comments</h3>
                             <div className="mt-4 space-y-4">
-                                {ticket?.comments.map((comment) => (
-                                    <div key={comment._id} className="bg-gray-50 p-4 rounded-lg">
+                                {comments.map((comment, idx) => (
+                                    <div key={comment._id || idx} className="bg-gray-50 p-4 rounded-lg">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-900">
-                                                {comment.user.name}
+                                                {comment.user?.name}
                                             </span>
                                             <span className="text-sm text-gray-500">
                                                 {new Date(comment.createdAt).toLocaleDateString()}
@@ -207,8 +220,7 @@ const TicketDetails = () => {
                                     </div>
                                 ))}
                             </div>
-
-                            <form onSubmit={handleCommentSubmit} className="mt-4">
+                            <form onSubmit={handleCommentSubmit} className="mt-4 flex flex-col gap-2">
                                 <div>
                                     <label htmlFor="comment" className="sr-only">
                                         Add a comment
@@ -223,13 +235,13 @@ const TicketDetails = () => {
                                         placeholder="Add a comment..."
                                     />
                                 </div>
-                                <div className="mt-3 flex justify-end">
+                                <div className="flex justify-end">
                                     <button
                                         type="submit"
                                         disabled={submitting || !comment.trim()}
                                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
                                     >
-                                        {submitting ? 'Posting...' : 'Post Comment'}
+                                        {submitting ? 'Posting...' : 'Add Comment'}
                                     </button>
                                 </div>
                             </form>
