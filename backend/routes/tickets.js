@@ -50,9 +50,10 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Get tickets for a project
+// Get tickets for a project with AND filters and OR for keyword
 router.get('/project/:projectId', auth, async (req, res) => {
     try {
+        const { status, priority, assignee, q } = req.query;
         // Check if user has access to the project
         const project = await Project.findOne({
             _id: req.params.projectId,
@@ -61,12 +62,19 @@ router.get('/project/:projectId', auth, async (req, res) => {
                 { 'teamMembers.email': req.user.email }
             ]
         });
-
         if (!project) {
             return res.status(403).json({ message: 'Access denied to project' });
         }
-
-        const tickets = await Ticket.find({ project: req.params.projectId });
+        // Build AND filter
+        const filter = { project: req.params.projectId };
+        if (status) filter.status = status;
+        if (priority) filter.priority = priority;
+        if (assignee) filter['assignee.name'] = assignee;
+        if (q) filter.$or = [
+            { title: { $regex: q, $options: 'i' } },
+            { description: { $regex: q, $options: 'i' } }
+        ];
+        const tickets = await Ticket.find(filter);
         res.json(tickets);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tickets' });

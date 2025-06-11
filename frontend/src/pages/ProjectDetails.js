@@ -10,11 +10,21 @@ const ProjectDetails = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [priorityFilter, setPriorityFilter] = useState('');
+    const [assigneeFilter, setAssigneeFilter] = useState('');
+    const [search, setSearch] = useState('');
+    const [assignees, setAssignees] = useState([]);
 
     useEffect(() => {
         fetchProject();
         fetchTickets();
     }, [id]);
+
+    useEffect(() => {
+        // Extract unique assignees for filter dropdown
+        setAssignees([...new Set(tickets.map(t => t.assignee?.name).filter(Boolean))]);
+    }, [tickets]);
 
     const fetchProject = async () => {
         try {
@@ -27,7 +37,12 @@ const ProjectDetails = () => {
 
     const fetchTickets = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/tickets/project/${id}`);
+            let url = `http://localhost:5000/api/tickets/project/${id}?`;
+            if (statusFilter) url += `status=${statusFilter}&`;
+            if (priorityFilter) url += `priority=${priorityFilter}&`;
+            if (assigneeFilter) url += `assignee=${encodeURIComponent(assigneeFilter)}&`;
+            if (search) url += `q=${encodeURIComponent(search)}&`;
+            const response = await axios.get(url);
             setTickets(response.data);
         } catch (error) {
             setError('Failed to fetch tickets');
@@ -109,6 +124,71 @@ const ProjectDetails = () => {
                         <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
                             {error}
                         </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-4 mb-6 items-center">
+                        <input
+                            type="text"
+                            placeholder="Search tickets..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') fetchTickets(); }}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <select
+                            value={statusFilter}
+                            onChange={e => { setStatusFilter(e.target.value); setLoading(true); setTimeout(fetchTickets, 0); }}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm"
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="todo">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="done">Done</option>
+                        </select>
+                        <select
+                            value={priorityFilter}
+                            onChange={e => { setPriorityFilter(e.target.value); setLoading(true); setTimeout(fetchTickets, 0); }}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm"
+                        >
+                            <option value="">All Priorities</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                        <select
+                            value={assigneeFilter}
+                            onChange={e => { setAssigneeFilter(e.target.value); setLoading(true); setTimeout(fetchTickets, 0); }}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm"
+                        >
+                            <option value="">All Assignees</option>
+                            {assignees.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={fetchTickets}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                        >
+                            Filter
+                        </button>
+                        <button
+                            onClick={() => {
+                                setStatusFilter('');
+                                setPriorityFilter('');
+                                setAssigneeFilter('');
+                                setSearch('');
+                                setLoading(true);
+                                setTimeout(fetchTickets, 0);
+                            }}
+                            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400"
+                        >
+                            Reset
+                        </button>
+                    </div>
+
+                    {tickets.length === 0 && (
+                        <div className="text-center text-gray-500 mt-8">No tickets found for the selected filters.</div>
                     )}
 
                     <DragDropContext onDragEnd={onDragEnd}>
