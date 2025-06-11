@@ -27,6 +27,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bug-track
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/tickets', require('./routes/tickets'));
+app.use('/api/comments', require('./routes/comments'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

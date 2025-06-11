@@ -4,6 +4,36 @@ import axios from 'axios';
 // import { useAuth } from '../contexts/AuthContext';
 import Modal from 'react-modal';
 
+function buildThread(comments) {
+    const map = {};
+    comments.forEach(c => map[c._id] = { ...c, replies: [] });
+    const roots = [];
+    comments.forEach(c => {
+        if (c.parentId) {
+            map[c.parentId]?.replies.push(map[c._id]);
+        } else {
+            roots.push(map[c._id]);
+        }
+    });
+    return roots;
+}
+
+function CommentThread({ comments, onReply }) {
+    return comments.map(comment => (
+        <div key={comment._id} style={{ marginLeft: comment.parentId ? 20 : 0 }} className="mb-2">
+            <div className="text-xs text-gray-500">
+                <b>{comment.userId}</b> {/* Replace with user name if you populate */}
+                <span> {new Date(comment.createdAt).toLocaleString()}</span>
+            </div>
+            <div className="mb-1">{comment.text}</div>
+            <button className="text-blue-600 text-xs mb-1" onClick={() => onReply(comment._id)}>Reply</button>
+            {comment.replies && comment.replies.length > 0 && (
+                <CommentThread comments={comment.replies} onReply={onReply} />
+            )}
+        </div>
+    ));
+}
+
 const TicketDetails = () => {
     const { id } = useParams();
     const [ticket, setTicket] = useState(null);
@@ -17,6 +47,7 @@ const TicketDetails = () => {
     const [editFields, setEditFields] = useState({ title: '', description: '', priority: '', status: '', assignee: '' });
     const [teamMembers, setTeamMembers] = useState([]);
     const [comments, setComments] = useState([]);
+    const [replyTo, setReplyTo] = useState(null);
 
     useEffect(() => {
         fetchTicket();
@@ -46,7 +77,7 @@ const TicketDetails = () => {
 
     const fetchComments = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/tickets/${id}/comments`);
+            const response = await axios.get(`http://localhost:5000/api/comments/ticket/${id}`);
             setComments(response.data);
         } catch (error) {
             // Optionally handle error
@@ -80,13 +111,17 @@ const TicketDetails = () => {
         if (!comment.trim()) return;
         try {
             setSubmitting(true);
-            await axios.post(`http://localhost:5000/api/tickets/${id}/comments`, {
+            await axios.post(`http://localhost:5000/api/comments`, {
+                ticketId: id,
                 text: comment,
+                parentId: replyTo
             });
             setComment('');
+            setReplyTo(null);
             fetchComments(); // Refresh comments
         } catch (error) {
             setError('Failed to add comment');
+            console.error(error?.response?.data || error);
         } finally {
             setSubmitting(false);
         }
@@ -206,21 +241,12 @@ const TicketDetails = () => {
                         <div className="mt-6">
                             <h3 className="text-lg font-medium text-gray-900">Comments</h3>
                             <div className="mt-4 space-y-4">
-                                {comments.map((comment, idx) => (
-                                    <div key={comment._id || idx} className="bg-gray-50 p-4 rounded-lg">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {comment.user?.name}
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                                {new Date(comment.createdAt).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <p className="mt-2 text-sm text-gray-500">{comment.text}</p>
-                                    </div>
-                                ))}
+                                <CommentThread comments={buildThread(comments)} onReply={setReplyTo} />
                             </div>
                             <form onSubmit={handleCommentSubmit} className="mt-4 flex flex-col gap-2">
+                                {replyTo && (
+                                    <div className="text-xs text-blue-600">Replying to comment {replyTo} <button type="button" onClick={() => setReplyTo(null)} className="ml-2 text-red-500">Cancel</button></div>
+                                )}
                                 <div>
                                     <label htmlFor="comment" className="sr-only">
                                         Add a comment
