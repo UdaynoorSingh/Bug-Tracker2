@@ -84,37 +84,24 @@ router.get('/:id', auth, async (req, res) => {
 // Update project
 router.put('/:id', auth, async (req, res) => {
     try {
+        const { name, description, status } = req.body;
         const project = await Project.findOne({
             _id: req.params.id,
-            $or: [
-                { owner: req.user.userId },
-                { 'teamMembers.email': req.user.email }
-            ]
+            owner: req.user.userId
         });
 
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        const updates = Object.keys(req.body);
-        const allowedUpdates = ['name', 'description', 'status'];
-        const isValidOperation = updates.every(update => allowedUpdates.includes(update));
+        project.name = name;
+        project.description = description;
+        project.status = status;
 
-        if (!isValidOperation) {
-            return res.status(400).json({ message: 'Invalid updates' });
-        }
-
-        updates.forEach(update => project[update] = req.body[update]);
         await project.save();
-
-        await project.populate('owner', 'name email');
-
         res.json(project);
     } catch (error) {
         console.error('Update project error:', error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: error.message });
-        }
         res.status(500).json({ message: 'Error updating project' });
     }
 });
@@ -148,12 +135,7 @@ router.delete('/:id', auth, async (req, res) => {
 // Add team member
 router.post('/:id/members', auth, async (req, res) => {
     try {
-        const { email, role } = req.body;
-
-        if (!email || !role) {
-            return res.status(400).json({ message: 'Email and role are required' });
-        }
-
+        const { name, email } = req.body;
         const project = await Project.findOne({
             _id: req.params.id,
             $or: [
@@ -166,24 +148,14 @@ router.post('/:id/members', auth, async (req, res) => {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Check if user is already a member
-        const isMember = project.teamMembers.some(
-            member => member.user.toString() === user._id.toString()
-        );
-
+        // Check if member already exists
+        const isMember = project.teamMembers.some(member => member.email === email);
         if (isMember) {
-            return res.status(400).json({ message: 'User is already a member' });
+            return res.status(400).json({ message: 'Team member already exists' });
         }
 
-        project.teamMembers.push({ user: user._id, role });
+        project.teamMembers.push({ name, email });
         await project.save();
-
-        await project.populate('owner', 'name email');
 
         res.json(project);
     } catch (error) {
@@ -193,14 +165,11 @@ router.post('/:id/members', auth, async (req, res) => {
 });
 
 // Remove team member
-router.delete('/:id/members/:userId', auth, async (req, res) => {
+router.delete('/:id/members/:email', auth, async (req, res) => {
     try {
         const project = await Project.findOne({
             _id: req.params.id,
-            $or: [
-                { owner: req.user.userId },
-                { 'teamMembers.email': req.user.email }
-            ]
+            owner: req.user.userId
         });
 
         if (!project) {
@@ -208,13 +177,10 @@ router.delete('/:id/members/:userId', auth, async (req, res) => {
         }
 
         project.teamMembers = project.teamMembers.filter(
-            member => member.user.toString() !== req.params.userId
+            member => member.email !== req.params.email
         );
 
         await project.save();
-
-        await project.populate('owner', 'name email');
-
         res.json(project);
     } catch (error) {
         console.error('Remove team member error:', error);

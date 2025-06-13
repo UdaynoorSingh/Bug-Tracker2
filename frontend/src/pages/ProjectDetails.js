@@ -22,6 +22,9 @@ const ProjectDetails = () => {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteTicketId, setDeleteTicketId] = useState(null);
     const [currentUser, setCurrentUser] = useState({ role: 'user', email: '' });
+    const [editProjectModalOpen, setEditProjectModalOpen] = useState(false);
+    const [editProjectFields, setEditProjectFields] = useState({ name: '', description: '', status: '' });
+    const [newTeamMember, setNewTeamMember] = useState({ name: '', email: '' });
 
     useEffect(() => {
         fetchProject();
@@ -144,6 +147,41 @@ const ProjectDetails = () => {
         }
     };
 
+    const openEditProjectModal = () => {
+        setEditProjectFields({
+            name: project.name,
+            description: project.description,
+            status: project.status
+        });
+        setEditProjectModalOpen(true);
+    };
+
+    const closeEditProjectModal = () => setEditProjectModalOpen(false);
+
+    const handleProjectEditChange = (field, value) => {
+        setEditProjectFields({ ...editProjectFields, [field]: value });
+    };
+
+    const handleProjectEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`http://localhost:5000/api/projects/${id}`, editProjectFields);
+            setEditProjectModalOpen(false);
+            fetchProject();
+        } catch (error) {
+            setError('Failed to update project');
+        }
+    };
+
+    const handleRemoveTeamMember = async (email) => {
+        try {
+            await axios.delete(`http://localhost:5000/api/projects/${id}/members/${email}`);
+            fetchProject();
+        } catch (error) {
+            setError('Failed to remove team member');
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -169,6 +207,12 @@ const ProjectDetails = () => {
                             <p className="mt-1 text-md text-gray-600">{project?.description}</p>
                         </div>
                         <div className="flex flex-col items-end space-y-2">
+                            <button
+                                onClick={openEditProjectModal}
+                                className="mb-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 focus:outline-none"
+                            >
+                                Edit Project
+                            </button>
                             <button
                                 onClick={() => navigate('/projects/new')}
                                 className="mb-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 focus:outline-none"
@@ -454,6 +498,104 @@ const ProjectDetails = () => {
                             Delete
                         </button>
                     </div>
+                </div>
+            </Modal>
+            <Modal
+                isOpen={editProjectModalOpen}
+                onRequestClose={closeEditProjectModal}
+                className="bg-white rounded-lg p-6 max-w-2xl w-full mx-auto mt-20 focus:outline-none"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                style={{
+                    content: {
+                        maxHeight: '80vh',
+                        overflowY: 'auto',
+                        padding: '0',
+                        position: 'relative',
+                        inset: 'unset',
+                        margin: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    },
+                    overlay: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                    }
+                }}
+            >
+                <div className="space-y-4 p-6">
+                    <h3 className="text-xl font-bold text-gray-900">Edit Project</h3>
+                    <form onSubmit={handleProjectEditSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Project Name</label>
+                            <input
+                                type="text"
+                                value={editProjectFields.name}
+                                onChange={(e) => handleProjectEditChange('name', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea
+                                value={editProjectFields.description}
+                                onChange={(e) => handleProjectEditChange('description', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                rows="4"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Status</label>
+                            <select
+                                value={editProjectFields.status}
+                                onChange={(e) => handleProjectEditChange('status', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                            >
+                                <option value="Active">Active</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div className="mt-6">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Team Members</h4>
+                            <div className="space-y-4">
+                                {project?.teamMembers.map((member, index) => (
+                                    <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                                        <div>
+                                            <p className="font-medium">{member.name}</p>
+                                            <p className="text-sm text-gray-500">{member.email}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveTeamMember(member.email)}
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={closeEditProjectModal}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </Modal>
         </div>
