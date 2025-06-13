@@ -3,6 +3,8 @@ const router = express.Router();
 const Project = require('../models/Project');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const Ticket = require('../models/Ticket');
+const Comment = require('../models/Comment');
 
 // Create project
 router.post('/', auth, async (req, res) => {
@@ -124,13 +126,19 @@ router.delete('/:id', auth, async (req, res) => {
             _id: req.params.id,
             owner: req.user.userId
         });
-
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
         }
-
+        // Find all tickets in this project
+        const tickets = await Ticket.find({ project: project._id });
+        // Delete all comments for these tickets
+        const ticketIds = tickets.map(t => t._id);
+        await Comment.deleteMany({ ticketId: { $in: ticketIds } });
+        // Delete all tickets
+        await Ticket.deleteMany({ project: project._id });
+        // Delete the project
         await project.deleteOne();
-        res.json({ message: 'Project deleted' });
+        res.json({ message: 'Project, tickets, and related comments deleted' });
     } catch (error) {
         console.error('Delete project error:', error);
         res.status(500).json({ message: 'Error deleting project' });

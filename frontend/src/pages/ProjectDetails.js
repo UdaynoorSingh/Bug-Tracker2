@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import Modal from 'react-modal';
 
 const ProjectDetails = () => {
     const { id } = useParams();
@@ -15,6 +16,12 @@ const ProjectDetails = () => {
     const [assigneeFilter, setAssigneeFilter] = useState('');
     const [search, setSearch] = useState('');
     const [assignees, setAssignees] = useState([]);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editTicket, setEditTicket] = useState(null);
+    const [editFields, setEditFields] = useState({ title: '', description: '', priority: '', status: '', assignee: '' });
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deleteTicketId, setDeleteTicketId] = useState(null);
+    const [currentUser, setCurrentUser] = useState({ role: 'user', email: '' });
 
     useEffect(() => {
         fetchProject();
@@ -25,6 +32,11 @@ const ProjectDetails = () => {
         // Extract unique assignees for filter dropdown
         setAssignees([...new Set(tickets.map(t => t.assignee?.name).filter(Boolean))]);
     }, [tickets]);
+
+    useEffect(() => {
+        // Simulate fetching current user (replace with real auth)
+        setCurrentUser({ role: 'admin', email: 'admin@example.com' });
+    }, []);
 
     const fetchProject = async () => {
         try {
@@ -77,6 +89,58 @@ const ProjectDetails = () => {
             setTickets(newTickets);
         } catch (error) {
             setError('Failed to update ticket status');
+        }
+    };
+
+    const openEditModal = (ticket) => {
+        setEditTicket(ticket);
+        setEditFields({
+            title: ticket.title,
+            description: ticket.description,
+            priority: ticket.priority,
+            status: ticket.status,
+            assignee: ticket.assignee?.name || ''
+        });
+        setEditModalOpen(true);
+    };
+
+    const closeEditModal = () => setEditModalOpen(false);
+
+    const handleEditChange = (field, value) => {
+        setEditFields({ ...editFields, [field]: value });
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`http://localhost:5000/api/tickets/${editTicket._id}`, {
+                title: editFields.title,
+                description: editFields.description,
+                priority: editFields.priority,
+                status: editFields.status,
+                assignee: tickets.find(t => t.assignee?.name === editFields.assignee)?.assignee || editTicket.assignee
+            });
+            setEditModalOpen(false);
+            fetchTickets();
+        } catch (error) {
+            setError('Failed to update ticket');
+        }
+    };
+
+    const openDeleteConfirm = (ticketId) => {
+        setDeleteTicketId(ticketId);
+        setDeleteConfirmOpen(true);
+    };
+
+    const closeDeleteConfirm = () => setDeleteConfirmOpen(false);
+
+    const handleDelete = async () => {
+        try {
+            await axios.delete(`http://localhost:5000/api/tickets/${deleteTicketId}`);
+            setDeleteConfirmOpen(false);
+            fetchTickets();
+        } catch (error) {
+            setError('Failed to delete ticket');
         }
     };
 
@@ -243,6 +307,22 @@ const ProjectDetails = () => {
                                                                         )}
                                                                     </div>
                                                                 </Link>
+                                                                {(currentUser.role === 'admin' || currentUser.email === ticket.assignee?.email) && (
+                                                                    <div className="flex gap-2 mt-2">
+                                                                        <button
+                                                                            onClick={() => openEditModal(ticket)}
+                                                                            className="text-blue-600 text-xs hover:underline"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => openDeleteConfirm(ticket._id)}
+                                                                            className="text-red-600 text-xs hover:underline"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </Draggable>
@@ -257,6 +337,125 @@ const ProjectDetails = () => {
                     </DragDropContext>
                 </div>
             </div>
+            <Modal
+                isOpen={editModalOpen}
+                onRequestClose={closeEditModal}
+                contentLabel="Edit Ticket"
+                className="fixed inset-0 flex items-center justify-center z-50"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-30 z-40"
+                ariaHideApp={false}
+            >
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg">
+                    <h2 className="text-xl font-bold mb-4">Edit Ticket</h2>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Title</label>
+                            <input
+                                type="text"
+                                value={editFields.title}
+                                onChange={e => handleEditChange('title', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea
+                                value={editFields.description}
+                                onChange={e => handleEditChange('description', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                rows={3}
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Priority</label>
+                                <select
+                                    value={editFields.priority}
+                                    onChange={e => handleEditChange('priority', e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Status</label>
+                                <select
+                                    value={editFields.status}
+                                    onChange={e => handleEditChange('status', e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                >
+                                    <option value="todo">To Do</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Assignee</label>
+                            <select
+                                value={editFields.assignee}
+                                onChange={e => handleEditChange('assignee', e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                                required
+                            >
+                                <option value="">Select team member</option>
+                                {assignees.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                type="button"
+                                onClick={closeEditModal}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
+            <Modal
+                isOpen={deleteConfirmOpen}
+                onRequestClose={closeDeleteConfirm}
+                contentLabel="Delete Ticket"
+                className="fixed inset-0 flex items-center justify-center z-50"
+                overlayClassName="fixed inset-0 bg-black bg-opacity-30 z-40"
+                ariaHideApp={false}
+            >
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+                    <h2 className="text-xl font-bold mb-4 text-red-600">Delete Ticket</h2>
+                    <p>Are you sure you want to delete this ticket? This action cannot be undone.</p>
+                    <div className="flex justify-end space-x-2 mt-6">
+                        <button
+                            type="button"
+                            onClick={closeDeleteConfirm}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
