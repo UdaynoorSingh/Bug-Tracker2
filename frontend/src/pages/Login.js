@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -18,7 +17,16 @@ const Login = () => {
             setError('');
             setLoading(true);
             await login(email, password);
-            setTimeout(() => navigate('/'), 100); 
+
+            // 🔁 Check if there's a pending invite token
+            const inviteToken = localStorage.getItem('pendingInviteToken');
+            if (inviteToken) {
+                localStorage.removeItem('pendingInviteToken');
+                navigate(`/accept-invite/${inviteToken}`);
+            } else {
+                navigate('/');
+            }
+
         } catch (error) {
             setError('Failed to sign in. Please check your credentials.');
         } finally {
@@ -102,4 +110,4 @@ const Login = () => {
     );
 };
 
-export default Login; 
+export default Login;

@@ -10,6 +10,7 @@ import ProjectDetails from './pages/ProjectDetails';
 import CreateProject from './pages/CreateProject';
 import CreateTicket from './pages/CreateTicket';
 import TicketDetails from './pages/TicketDetails';
+import AcceptInvitePage from './pages/AcceptInvitePage'; 
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/accept-invite/:token" element={<AcceptInvitePage />} /> {/* 👈 NEW */}
                         <Route
                             path="/"
                             element={
@@ -70,4 +72,4 @@ function App() {
     );
 }
 
-export default App; 
+export default App;
