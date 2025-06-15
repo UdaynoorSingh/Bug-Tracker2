@@ -24,7 +24,7 @@ const projectSchema = new mongoose.Schema({
         {
             name: {
                 type: String,
-                required: [true, 'Team member name is required']
+                required: [false, 'Team member name is not required']
             },
             email: {
                 type: String,

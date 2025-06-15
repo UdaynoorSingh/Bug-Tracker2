@@ -32,13 +32,15 @@ async function sendInvitationEmail(email, project, token) {
 async function handleTeamInvitations(project, newMembers = []) {
     for (const member of newMembers) {
         const alreadyInTeam = project.teamMembers.some(m => m.email === member.email);
-        const alreadyInvited = await ProjectInvitation.findOne({
+
+        // Delete any stale pending invitations
+        await ProjectInvitation.deleteMany({
             projectId: project._id,
             email: member.email,
             accepted: false
         });
 
-        if (!alreadyInTeam && !alreadyInvited) {
+        if (!alreadyInTeam) {
             const token = crypto.randomBytes(24).toString('hex');
             const invite = new ProjectInvitation({
                 projectId: project._id,
@@ -47,7 +49,13 @@ async function handleTeamInvitations(project, newMembers = []) {
             });
             await invite.save();
             await sendInvitationEmail(member.email, project, token);
-            project.teamMembers.push(member);
+
+            project.teamMembers.push({
+                name: member.name || '',
+                email: member.email
+            });
+
+            console.log(`Inviting new member: ${member.email}`);
         }
     }
 }
@@ -84,9 +92,7 @@ router.get('/', auth, async (req, res) => {
                 { owner: req.user.userId },
                 { 'teamMembers.email': req.user.email }
             ]
-        })
-            .populate('owner', 'name email')
-            .sort({ updatedAt: -1 });
+        }).populate('owner', 'name email').sort({ updatedAt: -1 });
         res.json(projects);
     } catch (error) {
         console.error('Fetch projects error:', error);
@@ -104,9 +110,7 @@ router.get('/:id', auth, async (req, res) => {
                 { 'teamMembers.email': req.user.email }
             ]
         }).populate('owner', 'name email');
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
-        }
+        if (!project) return res.status(404).json({ message: 'Project not found' });
         res.json(project);
     } catch (error) {
         console.error('Fetch project error:', error);
@@ -118,15 +122,26 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const { name, description, status, teamMembers } = req.body;
-        const project = await Project.findOne({ _id: req.params.id, owner: req.user.userId });
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found' });
-        }
-        project.name = name;
-        project.description = description;
-        project.status = status;
-        await handleTeamInvitations(project, teamMembers || []);
+
+        const project = await Project.findOne({
+            _id: req.params.id,
+            owner: req.user.userId
+        });
+
+        if (!project) return res.status(404).json({ message: 'Project not found' });
+
+        if (name) project.name = name;
+        if (description) project.description = description;
+        if (status) project.status = status;
+
+        const existingEmails = project.teamMembers.map(m => m.email.toLowerCase());
+        const newMembers = (teamMembers || []).filter(
+            m => !existingEmails.includes(m.email.toLowerCase())
+        );
+
+        await handleTeamInvitations(project, newMembers);
         await project.save();
+
         res.json(project);
     } catch (error) {
         console.error('Update project error:', error);
@@ -154,11 +169,16 @@ router.delete('/:id', auth, async (req, res) => {
 // Add team member
 router.post('/:id/members', auth, async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, name } = req.body;
+        if (!email || !name) {
+            return res.status(400).json({ message: 'Name and email are required.' });
+        }
         const project = await Project.findOne({ _id: req.params.id, owner: req.user.userId });
         if (!project) return res.status(404).json({ message: 'Project not found' });
-        await handleTeamInvitations(project, [{ email }]);
+
+        await handleTeamInvitations(project, [{ name, email }]);
         await project.save();
+
         res.json({ message: 'Invitation email sent successfully.' });
     } catch (error) {
         console.error('Add member error:', error);
