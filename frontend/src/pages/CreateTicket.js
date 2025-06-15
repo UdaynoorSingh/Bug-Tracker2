@@ -19,7 +19,7 @@ const CreateTicket = () => {
         // Fetch project to get team members
         const fetchProject = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/projects/${projectId}`);
+                const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${projectId}`);
                 setTeamMembers(response.data.teamMembers || []);
             } catch (err) {
                 setError('Failed to fetch project team members');
@@ -42,7 +42,7 @@ const CreateTicket = () => {
         }
         try {
             setLoading(true);
-            await axios.post('http://localhost:5000/api/tickets', {
+            await axios.post('https://bug-tracker2-1.onrender.com/api/tickets', {
                 title,
                 description,
                 priority,

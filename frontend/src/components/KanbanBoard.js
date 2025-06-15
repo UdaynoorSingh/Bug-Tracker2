@@ -35,7 +35,7 @@ const KanbanBoard = ({ projectId }) => {
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`http://localhost:5000/api/tickets/project/${projectId}`, {
+            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/tickets/project/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
@@ -129,7 +129,7 @@ const KanbanBoard = ({ projectId }) => {
 
             // Update ticket status in backend
             await axios.patch(
-                `http://localhost:5000/api/tickets/${draggableId}`,
+                `https://bug-tracker2-1.onrender.com/api/tickets/${draggableId}`,
                 { status: destination.droppableId },
                 {
                     headers: {

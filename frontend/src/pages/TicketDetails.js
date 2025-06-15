@@ -60,14 +60,14 @@ const TicketDetails = () => {
 
     useEffect(() => {
         if (ticket?.project) {
-            axios.get(`http://localhost:5000/api/projects/${ticket.project}`)
+            axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${ticket.project}`)
                 .then(res => setTeamMembers(res.data.teamMembers || []));
         }
     }, [ticket?.project]);
 
     const fetchTicket = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/tickets/${id}`);
+            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`);
             setTicket(response.data);
         } catch (error) {
             setError('Failed to fetch ticket details');
@@ -78,7 +78,7 @@ const TicketDetails = () => {
 
     const fetchComments = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/comments/ticket/${id}`);
+            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/comments/ticket/${id}`);
             setComments(response.data);
         } catch (error) {
             // Optionally handle error
@@ -87,7 +87,7 @@ const TicketDetails = () => {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            await axios.put(`http://localhost:5000/api/tickets/${id}`, {
+            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
                 status: newStatus,
             });
             setTicket({ ...ticket, status: newStatus });
@@ -98,7 +98,7 @@ const TicketDetails = () => {
 
     const handlePriorityChange = async (newPriority) => {
         try {
-            await axios.put(`http://localhost:5000/api/tickets/${id}`, {
+            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
                 priority: newPriority,
             });
             setTicket({ ...ticket, priority: newPriority });
@@ -112,7 +112,7 @@ const TicketDetails = () => {
         if (!comment.trim()) return;
         try {
             setSubmitting(true);
-            await axios.post(`http://localhost:5000/api/comments`, {
+            await axios.post(`https://bug-tracker2-1.onrender.com/api/comments`, {
                 ticketId: id,
                 text: comment,
                 parentId: replyTo
@@ -148,7 +148,7 @@ const TicketDetails = () => {
         e.preventDefault();
         const selectedAssignee = teamMembers.find(tm => tm.email === editFields.assignee);
         try {
-            await axios.put(`http://localhost:5000/api/tickets/${id}`, {
+            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
                 title: editFields.title,
                 description: editFields.description,
                 priority: editFields.priority,

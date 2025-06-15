@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/auth/me');
+            const response = await axios.get('https://bug-tracker2-1.onrender.com/api/auth/me');
             setCurrentUser(response.data.user);
         } catch (error) {
             console.error('Auth check failed:', error);
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', {
+            const response = await axios.post('https://bug-tracker2-1.onrender.com/api/auth/login', {
                 email,
                 password,
             });
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (email, password, name) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', {
+            const response = await axios.post('https://bug-tracker2-1.onrender.com/api/auth/register', {
                 name,
                 email,
                 password,

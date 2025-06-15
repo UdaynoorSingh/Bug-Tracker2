@@ -17,7 +17,7 @@ const ProjectDetail = () => {
 
     const fetchProject = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/projects/${id}`, {
+            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${id}`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }

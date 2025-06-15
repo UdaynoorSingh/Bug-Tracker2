@@ -47,7 +47,7 @@ const CreateProject = () => {
         try {
             setLoading(true);
             const response = await axios.post(
-                'http://localhost:5000/api/projects',
+                'https://bug-tracker2-1.onrender.com/api/projects',
                 {
                     name,
                     description,
