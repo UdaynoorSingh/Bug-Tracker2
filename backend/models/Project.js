@@ -1,5 +1,5 @@
+// models/Project.js
 const mongoose = require('mongoose');
-
 const projectSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -34,11 +34,11 @@ const projectSchema = new mongoose.Schema({
             }
         }
     ],
-    createdAt: {
+    createdAt:{
         type: Date,
         default: Date.now
     },
-    updatedAt: {
+    updatedAt:{
         type: Date,
         default: Date.now
     }
