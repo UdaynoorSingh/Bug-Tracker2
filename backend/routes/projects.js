@@ -19,7 +19,7 @@ async function sendInvitationEmail(email, project, token) {
             pass: process.env.EMAIL_PASS
         }
     });
-    const acceptUrl = `http://localhost:3000/accept-invite/${token}`;
+    const acceptUrl = `https://bug-tracker2-1.onrender.com/accept-invite/${token}`;
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
@@ -64,9 +64,24 @@ async function handleTeamInvitations(project, newMembers = []) {
 router.post('/', auth, async (req, res) => {
     try {
         const { name, description, status, teamMembers } = req.body;
+
         if (!name || !description) {
             return res.status(400).json({ message: 'Name and description are required' });
         }
+
+        // 🔒 Check for duplicate project name (by owner or team member)
+        const existingProject = await Project.findOne({
+            name,
+            $or: [
+                { owner: req.user.userId },
+                { 'teamMembers.email': req.user.email }
+            ]
+        });
+
+        if (existingProject) {
+            return res.status(409).json({ message: 'A project with this name already exists.' });
+        }
+
         const project = new Project({
             name,
             description,
@@ -74,15 +89,18 @@ router.post('/', auth, async (req, res) => {
             owner: req.user.userId,
             teamMembers: []
         });
+
         await handleTeamInvitations(project, teamMembers || []);
         await project.save();
         await project.populate('owner', 'name email');
         res.status(201).json(project);
+
     } catch (error) {
         console.error('Create project error:', error);
         res.status(500).json({ message: 'Error creating project' });
     }
 });
+
 
 // Get all projects for user
 router.get('/', auth, async (req, res) => {

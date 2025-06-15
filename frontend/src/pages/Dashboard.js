@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import Modal from 'react-modal';
+import API_URL from '../API_URL'
 
 const Dashboard = () => {
     const [projects, setProjects] = useState([]);
@@ -27,7 +28,7 @@ const Dashboard = () => {
 
     const fetchProjects = async () => {
         try {
-            const response = await axios.get('https://bug-tracker2-1.onrender.com/api/projects', {
+            const response = await axios.get(`${API_URL}/api/projects`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
@@ -78,7 +79,7 @@ const Dashboard = () => {
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}`, editFields);
+            await axios.put(`${API_URL}/api/projects/${selectedProjectForEdit._id}`, editFields);
             setEditModalOpen(false);
             fetchProjects();
         } catch (error) {
@@ -88,7 +89,7 @@ const Dashboard = () => {
 
     const handleDeleteConfirm = async () => {
         try {
-            await axios.delete(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}`);
+            await axios.delete(`${API_URL}/api/projects/${selectedProjectForEdit._id}`);
             setDeleteModalOpen(false);
             fetchProjects();
         } catch (error) {
@@ -100,10 +101,10 @@ const Dashboard = () => {
         e.preventDefault();
         if (!newTeamMember.name.trim() || !newTeamMember.email.trim()) return;
         try {
-            await axios.post(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}/members`, newTeamMember);
+            await axios.post(`${API_URL}/api/projects/${selectedProjectForEdit._id}/members`, newTeamMember);
             setNewTeamMember({ name: '', email: '' });
             // Refresh team members
-            const { data } = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}`);
+            const { data } = await axios.get(`${API_URL}/api/projects/${selectedProjectForEdit._id}`);
             setEditTeamMembers(data.teamMembers || []);
             fetchProjects();
         } catch (error) {
@@ -113,9 +114,9 @@ const Dashboard = () => {
 
     const handleRemoveTeamMember = async (email) => {
         try {
-            await axios.delete(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}/members/${email}`);
+            await axios.delete(`${API_URL}/api/projects/${selectedProjectForEdit._id}/members/${email}`);
             // Refresh team members
-            const { data } = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${selectedProjectForEdit._id}`);
+            const { data } = await axios.get(`${API_URL}/api/projects/${selectedProjectForEdit._id}`);
             setEditTeamMembers(data.teamMembers || []);
             fetchProjects();
         } catch (error) {

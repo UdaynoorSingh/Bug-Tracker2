@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Modal from 'react-modal';
+import API_URL from '../API_URL'
 
 const ProjectDetails = () => {
     const { id } = useParams();
@@ -44,7 +45,7 @@ const ProjectDetails = () => {
 
     const fetchProject = async () => {
         try {
-            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${id}`);
+            const response = await axios.get(`${API_URL}/api/projects/${id}`);
             setProject(response.data);
         } catch (error) {
             setError('Failed to fetch project details');
@@ -53,7 +54,7 @@ const ProjectDetails = () => {
 
     const fetchTickets = async () => {
         try {
-            let url = `https://bug-tracker2-1.onrender.com/api/tickets/project/${id}?`;
+            let url = `${API_URL}/api/tickets/project/${id}?`;
             if (statusFilter) url += `status=${statusFilter}&`;
             if (priorityFilter) url += `priority=${priorityFilter}&`;
             if (assigneeFilter) url += `assignee=${encodeURIComponent(assigneeFilter)}&`;
@@ -83,7 +84,7 @@ const ProjectDetails = () => {
         const newStatus = destination.droppableId;
 
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${draggableId}`, {
+            await axios.put(`${API_URL}/api/tickets/${draggableId}`, {
                 status: newStatus,
             });
 
@@ -117,7 +118,7 @@ const ProjectDetails = () => {
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${editTicket._id}`, {
+            await axios.put(`${API_URL}/api/tickets/${editTicket._id}`, {
                 title: editFields.title,
                 description: editFields.description,
                 priority: editFields.priority,
@@ -140,7 +141,7 @@ const ProjectDetails = () => {
 
     const handleDelete = async () => {
         try {
-            await axios.delete(`https://bug-tracker2-1.onrender.com/api/tickets/${deleteTicketId}`);
+            await axios.delete(`${API_URL}/api/tickets/${deleteTicketId}`);
             setDeleteConfirmOpen(false);
             fetchTickets();
         } catch (error) {
@@ -166,7 +167,7 @@ const ProjectDetails = () => {
     const handleProjectEditSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/projects/${id}`, editProjectFields);
+            await axios.put(`${API_URL}/api/projects/${id}`, editProjectFields);
             setEditProjectModalOpen(false);
             fetchProject();
         } catch (error) {
@@ -176,7 +177,7 @@ const ProjectDetails = () => {
 
     const handleRemoveTeamMember = async (email) => {
         try {
-            await axios.delete(`https://bug-tracker2-1.onrender.com/api/projects/${id}/members/${email}`);
+            await axios.delete(`${API_URL}/api/projects/${id}/members/${email}`);
             fetchProject();
         } catch (error) {
             setError('Failed to remove team member');

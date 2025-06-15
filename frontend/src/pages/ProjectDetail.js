@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import KanbanBoard from '../components/KanbanBoard';
+import API_URL from '../API_URL'
 
 const ProjectDetail = () => {
     const [project, setProject] = useState(null);
@@ -17,7 +18,7 @@ const ProjectDetail = () => {
 
     const fetchProject = async () => {
         try {
-            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${id}`, {
+            const response = await axios.get(`${API_URL}/api/projects/${id}`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }

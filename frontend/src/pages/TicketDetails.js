@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 // import { useAuth } from '../contexts/AuthContext';
 import Modal from 'react-modal';
+import API_URL from '../API_URL'
 
 function buildThread(comments) {
     const map = {};
@@ -60,14 +61,14 @@ const TicketDetails = () => {
 
     useEffect(() => {
         if (ticket?.project) {
-            axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${ticket.project}`)
+            axios.get(`${API_URL}/api/projects/${ticket.project}`)
                 .then(res => setTeamMembers(res.data.teamMembers || []));
         }
     }, [ticket?.project]);
 
     const fetchTicket = async () => {
         try {
-            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`);
+            const response = await axios.get(`${API_URL}/api/tickets/${id}`);
             setTicket(response.data);
         } catch (error) {
             setError('Failed to fetch ticket details');
@@ -78,7 +79,7 @@ const TicketDetails = () => {
 
     const fetchComments = async () => {
         try {
-            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/comments/ticket/${id}`);
+            const response = await axios.get(`${API_URL}/api/comments/ticket/${id}`);
             setComments(response.data);
         } catch (error) {
             // Optionally handle error
@@ -87,7 +88,7 @@ const TicketDetails = () => {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
+            await axios.put(`${API_URL}/api/tickets/${id}`, {
                 status: newStatus,
             });
             setTicket({ ...ticket, status: newStatus });
@@ -98,7 +99,7 @@ const TicketDetails = () => {
 
     const handlePriorityChange = async (newPriority) => {
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
+            await axios.put(`${API_URL}/api/tickets/${id}`, {
                 priority: newPriority,
             });
             setTicket({ ...ticket, priority: newPriority });
@@ -112,7 +113,7 @@ const TicketDetails = () => {
         if (!comment.trim()) return;
         try {
             setSubmitting(true);
-            await axios.post(`https://bug-tracker2-1.onrender.com/api/comments`, {
+            await axios.post(`${API_URL}/api/comments`, {
                 ticketId: id,
                 text: comment,
                 parentId: replyTo
@@ -148,7 +149,7 @@ const TicketDetails = () => {
         e.preventDefault();
         const selectedAssignee = teamMembers.find(tm => tm.email === editFields.assignee);
         try {
-            await axios.put(`https://bug-tracker2-1.onrender.com/api/tickets/${id}`, {
+            await axios.put(`${API_URL}/api/tickets/${id}`, {
                 title: editFields.title,
                 description: editFields.description,
                 priority: editFields.priority,

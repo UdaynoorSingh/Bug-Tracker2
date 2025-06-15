@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../API_URL'
 
 const CreateTicket = () => {
     const { projectId } = useParams();
@@ -19,7 +20,7 @@ const CreateTicket = () => {
         // Fetch project to get team members
         const fetchProject = async () => {
             try {
-                const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/projects/${projectId}`);
+                const response = await axios.get(`${API_URL}/api/projects/${projectId}`);
                 setTeamMembers(response.data.teamMembers || []);
             } catch (err) {
                 setError('Failed to fetch project team members');
@@ -42,7 +43,7 @@ const CreateTicket = () => {
         }
         try {
             setLoading(true);
-            await axios.post('https://bug-tracker2-1.onrender.com/api/tickets', {
+            await axios.post(`${API_URL}/api/tickets`, {
                 title,
                 description,
                 priority,

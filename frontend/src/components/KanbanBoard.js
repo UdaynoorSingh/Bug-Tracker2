@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
+import API_URL from '../API_URL'
 
 // StrictMode compatible wrapper
 const StrictModeDroppable = ({ children, ...props }) => {
@@ -35,7 +36,7 @@ const KanbanBoard = ({ projectId }) => {
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`https://bug-tracker2-1.onrender.com/api/tickets/project/${projectId}`, {
+            const response = await axios.get(`${API_URL}/api/tickets/project/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
@@ -129,7 +130,7 @@ const KanbanBoard = ({ projectId }) => {
 
             // Update ticket status in backend
             await axios.patch(
-                `https://bug-tracker2-1.onrender.com/api/tickets/${draggableId}`,
+                `${API_URL}/api/tickets/${draggableId}`,
                 { status: destination.droppableId },
                 {
                     headers: {

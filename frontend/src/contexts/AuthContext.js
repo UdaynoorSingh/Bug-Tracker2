@@ -1,6 +1,7 @@
 // src/contexts/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../API_URL'
 
 const AuthContext = createContext(null);
 
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const response = await axios.get('https://bug-tracker2-1.onrender.com/api/auth/me');
+            const response = await axios.get(`${API_URL}/api/auth/me`);
             setCurrentUser(response.data.user);
         } catch (error) {
             console.error('Auth check failed:', error);
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('https://bug-tracker2-1.onrender.com/api/auth/login', {
+            const response = await axios.post(`${API_URL}/api/auth/login`, {
                 email,
                 password,
             });
@@ -59,7 +60,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (email, password, name) => {
         try {
-            const response = await axios.post('https://bug-tracker2-1.onrender.com/api/auth/register', {
+            const response = await axios.post(`${API_URL}/api/auth/register`, {
                 name,
                 email,
                 password,

@@ -24,6 +24,16 @@ router.post('/', auth, async (req, res) => {
             return res.status(403).json({ message: 'Access denied to project' });
         }
 
+        // 🔒 Check for duplicate ticket title in the same project
+        const existingTicket = await Ticket.findOne({
+            title,
+            project
+        });
+
+        if (existingTicket) {
+            return res.status(409).json({ message: 'A ticket with this title already exists in this project.' });
+        }
+
         // Validate assignee is a team member
         const isTeamMember = projectDoc.teamMembers.some(
             (tm) => tm.email === assignee?.email && tm.name === assignee?.name
@@ -41,9 +51,11 @@ router.post('/', auth, async (req, res) => {
             reporter: req.user.userId,
             status: req.body.status || 'todo'
         };
+
         if (comment && comment.trim()) {
             ticketData.comments = [{ user: req.user.userId, text: comment.trim() }];
         }
+
         const ticket = new Ticket(ticketData);
         await ticket.save();
         res.status(201).json(ticket);

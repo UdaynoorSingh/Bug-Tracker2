@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../API_URL'
 
 const CreateProject = () => {
     const [name, setName] = useState('');
@@ -47,7 +48,7 @@ const CreateProject = () => {
         try {
             setLoading(true);
             const response = await axios.post(
-                'https://bug-tracker2-1.onrender.com/api/projects',
+                `${API_URL}/api/projects`,
                 {
                     name,
                     description,
