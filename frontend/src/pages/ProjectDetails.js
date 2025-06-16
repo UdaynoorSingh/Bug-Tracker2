@@ -223,7 +223,7 @@ const ProjectDetails = () => {
                             </button>
                             <Link
                                 to={`/projects/${id}/tickets/new`}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-primary-100 hover:bg-primary-200 focus:outline-none"
                             >
                                 Create Ticket
                             </Link>
