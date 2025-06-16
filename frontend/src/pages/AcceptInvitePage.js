@@ -23,7 +23,7 @@ const AcceptInvitePage = () => {
         const acceptInvite = async () => {
             try {
                 const res = await axios.post(
-                    `${API_URL}/accept-invite/${token}`,
+                    `https://bug-tracker2-1.onrender.com/api/projects/accept-invite/${token}`,
                     {},
                     {
                         headers: {
