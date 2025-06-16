@@ -23,7 +23,7 @@ function App() {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
-                        <Route path="/accept-invite/:token" element={<AcceptInvitePage />} /> {/* 👈 NEW */}
+                        <Route path="/accept-invite/:token" element={<AcceptInvitePage />} /> 
                         <Route
                             path="/"
                             element={
