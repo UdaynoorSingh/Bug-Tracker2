@@ -19,7 +19,7 @@ async function sendInvitationEmail(email, project, token) {
             pass: process.env.EMAIL_PASS
         }
     });
-    const acceptUrl = `https://bug-tracker2-1.onrender.com/accept-invite/${token}`;
+    const acceptUrl = `bug-tracker2.vercel.app/accept-invite/${token}`;
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
