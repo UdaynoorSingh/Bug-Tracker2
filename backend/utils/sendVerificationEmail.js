@@ -2,7 +2,7 @@
 const nodemailer = require('nodemailer');
 
 const sendVerificationEmail = async (to, token) => {
-  const baseUrl = 'bug-tracker2.vercel.app';
+  const baseUrl = 'https://bug-tracker2-1.onrender.com';
   const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
   const transporter = nodemailer.createTransport({
