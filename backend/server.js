@@ -33,7 +33,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bug-track
   console.log('MongoDB Connected');
   
   if (process.env.NODE_ENV === 'production') {
-    setInterval(cleanupOrphanedFiles, 24 * 60 * 60 * 1000);
+    setInterval(async () => {
+      try {
+        await cleanupOrphanedFiles();
+        console.log('Upload cleanup completed');
+      } catch (err) {
+        console.error('Upload cleanup error:', err);
+      }
+    }, 24 * 60 * 60 * 1000); // 24 hours
     console.log('Upload cleanup job initialized');
   }
 })
