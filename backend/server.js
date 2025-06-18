@@ -20,7 +20,10 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: [
+    "bug-tracker2.vercel.app", // Your Vercel app URL
+    "https://bug-tracker2-1.onrender.com"   // Your Render backend URL
+  ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
