@@ -19,14 +19,15 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const user = new User({
-            name,
-            email,
-            password,
-            verificationToken,
-            verificationTokenExpires: Date.now()+20*60*1000,
-        });
+       // In auth.js registration route
+         const verificationToken = crypto.randomBytes(32).toString('hex');
+         const user = new User({
+           name,
+           email,
+           password,
+           verificationToken,
+           verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+         });
 
         await user.save();
         await sendVerificationEmail(email, verificationToken);
@@ -46,26 +47,27 @@ router.post('/register', async (req, res) => {
 });
 
 router.get('/verify-email', async (req, res) => {
-    try {
-        const { token } = req.query;
-        if (!token) return res.status(400).json({ message: 'Invalid or missing token' });
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).redirect(`${process.env.FRONTEND_URL}/verify-error?error=missing_token`);
 
-        const user = await User.findOne({ verificationToken: token });
-        if (!user) return res.status(400).json({ message: 'Invalid verification token' });
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) return res.status(400).redirect(`${process.env.FRONTEND_URL}/verify-error?error=invalid_token`);
 
-        if (user.verificationTokenExpires < Date.now()) {
-            return res.status(400).json({ message: 'Verification link has expired' });
-        }
-
-        user.verified = true;
-        user.verificationToken = undefined;
-        user.verificationTokenExpires = undefined;
-        await user.save();
-
-        res.json({ message: 'Email verified successfully. Redirecting to login...' });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error verifying email' });
+    if (user.verificationTokenExpires < Date.now()) {
+      return res.status(400).redirect(`${process.env.FRONTEND_URL}/verify-error?error=expired_token`);
     }
+
+    user.verified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+
+    res.redirect(`${process.env.FRONTEND_URL}/verify-success`);
+  } catch (err) {
+    console.error('Verification error:', err);
+    res.status(500).redirect(`${process.env.FRONTEND_URL}/verify-error?error=server_error`);
+  }
 });
 
 router.post('/login', async (req, res) => {
