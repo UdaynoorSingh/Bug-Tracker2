@@ -13,7 +13,6 @@ const AcceptInvitePage = () => {
         const authToken = localStorage.getItem('token');
 
         if (!authToken) {
-            // Save token and redirect to login
             localStorage.setItem('pendingInviteToken', token);
             setStatus('Redirecting to login...');
             setTimeout(() => navigate('/login'), 1500);
@@ -23,7 +22,7 @@ const AcceptInvitePage = () => {
         const acceptInvite = async () => {
             try {
                 const res = await axios.post(
-                    `https://bug-tracker2-1.onrender.com/api/projects/accept-invite/${token}`,
+                    `${API_URL}/api/projects/accept-invite/${token}`,
                     {},
                     {
                         headers: {

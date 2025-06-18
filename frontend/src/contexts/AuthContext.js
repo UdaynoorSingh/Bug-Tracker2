@@ -58,23 +58,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (email, password, name) => {
-        try {
-            const response = await axios.post(`${API_URL}/api/auth/register`, {
-                name,
-                email,
-                password,
-            });
-            const { token, user } = response.data;
-            localStorage.setItem('token', token);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            setCurrentUser(user);
-            return user;
-        } catch (error) {
-            console.error('Registration failed:', error);
-            throw new Error(error.response?.data?.message || 'Failed to register');
-        }
-    };
+const register = async (email, password, name) => {
+    try {
+        const response = await axios.post(`${API_URL}/api/auth/register`, {
+            name,
+            email,
+            password,
+        });
+        return response.data.message; 
+    } catch (error) {
+        console.error('Registration failed:', error);
+        throw new Error(error.response?.data?.message || 'Failed to register');
+    }
+};
+
 
     const logout = () => {
         localStorage.removeItem('token');

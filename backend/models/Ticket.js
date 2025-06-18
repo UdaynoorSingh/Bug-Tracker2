@@ -1,32 +1,23 @@
 // models/Ticket.js
 const mongoose = require('mongoose');
 
-const commentSchema = new mongoose.Schema({
-    user: {
-        name: { type: String, required: true },
-        email: { type: String, required: true }
-    },
-    text: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }
-}, { _id: true });
-
 const ticketSchema = new mongoose.Schema({
-    title: {
+    title:{
         type: String,
         required: true,
         trim: true
     },
-    description: {
+    description:{
         type: String,
         required: true
     },
-    project: {
+    project:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Project',
         required: true
     },
-    status: {
-        type: String,
+    status:{
+        type:String,
         enum: ['todo', 'in-progress', 'done'],
         default: 'todo'
     },
@@ -41,8 +32,8 @@ const ticketSchema = new mongoose.Schema({
         default: 'bug'
     },
     assignee: {
-        name: { type: String, required: true },
-        email: { type: String, required: true }
+        name:{type: String, required: true},
+        email:{type: String, required: true}
     },
     reporter: {
         type: mongoose.Schema.Types.ObjectId,
@@ -50,22 +41,22 @@ const ticketSchema = new mongoose.Schema({
         required: true
     },
     comments: [{
-        user: { type: String, required: true },
-        text: { type: String, required: true },
+        user: {type: String, required: true },
+        text: {type: String, required: true },
         createdAt: { type: Date, default: Date.now }
     }],
-    createdAt: {
+    createdAt:{
         type: Date,
         default: Date.now
     },
-    updatedAt: {
+    updatedAt:{
         type: Date,
         default: Date.now
     }
 });
 
 // Update the updatedAt timestamp before saving
-ticketSchema.pre('save', function (next) {
+ticketSchema.pre('save', function (next){
     this.updatedAt = Date.now();
     next();
 });

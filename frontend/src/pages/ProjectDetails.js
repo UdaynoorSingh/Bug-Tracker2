@@ -34,12 +34,10 @@ const ProjectDetails = () => {
     }, [id]);
 
     useEffect(() => {
-        // Extract unique assignees for filter dropdown
         setAssignees([...new Set(tickets.map(t => t.assignee?.name).filter(Boolean))]);
     }, [tickets]);
 
     useEffect(() => {
-        // Simulate fetching current user (replace with real auth)
         setCurrentUser({ role: 'admin', email: 'admin@example.com' });
     }, []);
 

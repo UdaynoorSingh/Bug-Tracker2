@@ -34,7 +34,6 @@ const CreateProject = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        // Validate team members
         const hasIncomplete = teamMembers.some(
             (tm) => (tm.name.trim() && !tm.email.trim()) || (!tm.name.trim() && tm.email.trim())
         );

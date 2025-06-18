@@ -6,35 +6,29 @@ const Project = require('../models/Project');
 const auth = require('../middleware/auth');
 const Comment = require('../models/Comment');
 
-// Create ticket
-router.post('/', auth, async (req, res) => {
-    try {
-        const { title, description, project, priority, assignee, comment } = req.body;
+router.post('/', auth, async (req, res)=>{
+    try{
+        const{ title, description, project, priority, assignee, comment} = req.body;
 
-        // Check if user has access to the project
         const projectDoc = await Project.findOne({
             _id: project,
-            $or: [
-                { owner: req.user.userId },
-                { 'teamMembers.email': req.user.email }
+            $or: [{owner: req.user.userId},{'teamMembers.email': req.user.email}
             ]
         });
 
-        if (!projectDoc) {
+        if(!projectDoc){
             return res.status(403).json({ message: 'Access denied to project' });
         }
 
-        // 🔒 Check for duplicate ticket title in the same project
         const existingTicket = await Ticket.findOne({
             title,
             project
         });
 
-        if (existingTicket) {
+        if(existingTicket){
             return res.status(409).json({ message: 'A ticket with this title already exists in this project.' });
         }
 
-        // Validate assignee is a team member
         const isTeamMember = projectDoc.teamMembers.some(
             (tm) => tm.email === assignee?.email && tm.name === assignee?.name
         );
@@ -64,11 +58,9 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Get tickets for a project with AND filters and OR for keyword
 router.get('/project/:projectId', auth, async (req, res) => {
     try {
-        const { status, priority, assignee, q } = req.query;
-        // Check if user has access to the project
+        const {status, priority, assignee, q} = req.query;
         const project = await Project.findOne({
             _id: req.params.projectId,
             $or: [
@@ -79,7 +71,6 @@ router.get('/project/:projectId', auth, async (req, res) => {
         if (!project) {
             return res.status(403).json({ message: 'Access denied to project' });
         }
-        // Build AND filter
         const filter = { project: req.params.projectId };
         if (status) filter.status = status;
         if (priority) filter.priority = priority;
@@ -95,7 +86,6 @@ router.get('/project/:projectId', auth, async (req, res) => {
     }
 });
 
-// Get single ticket
 router.get('/:id', auth, async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
@@ -103,7 +93,6 @@ router.get('/:id', auth, async (req, res) => {
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
-        // Check if user has access to the project
         const project = await Project.findOne({
             _id: ticket.project,
             $or: [
@@ -122,7 +111,6 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Update ticket
 router.put('/:id', auth, async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
@@ -130,7 +118,6 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
-        // Check if user has access to the project
         const project = await Project.findOne({
             _id: ticket.project,
             $or: [
@@ -143,7 +130,6 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(403).json({ message: 'Access denied to ticket' });
         }
 
-        // Only allow specific fields to be updated
         const allowedUpdates = ['title', 'description', 'status', 'priority', 'assignee'];
         allowedUpdates.forEach(field => {
             if (req.body[field] !== undefined) {
@@ -151,7 +137,6 @@ router.put('/:id', auth, async (req, res) => {
             }
         });
 
-        // If updating assignee, validate
         if (req.body.assignee) {
             const isTeamMember = project.teamMembers.some(
                 (tm) => tm.email === req.body.assignee.email && tm.name === req.body.assignee.name
@@ -168,14 +153,12 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete ticket
 router.delete('/:id', auth, async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
-        // Check if user has access to the project
         const project = await Project.findOne({
             _id: ticket.project,
             $or: [
@@ -186,7 +169,6 @@ router.delete('/:id', auth, async (req, res) => {
         if (!project) {
             return res.status(403).json({ message: 'Access denied to ticket' });
         }
-        // Delete all comments for this ticket
         await Comment.deleteMany({ ticketId: ticket._id });
         await ticket.deleteOne();
         res.json({ message: 'Ticket and related comments deleted' });
@@ -196,7 +178,6 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// Add comment to ticket
 router.post('/:id/comments', auth, async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
@@ -206,7 +187,6 @@ router.post('/:id/comments', auth, async (req, res) => {
         if (!req.body.text || !req.body.text.trim()) {
             return res.status(400).json({ message: 'Comment text is required' });
         }
-        // Log user info for debugging
         console.log('Adding comment as user:', req.user);
         ticket.comments.push({
             user: {
@@ -223,7 +203,6 @@ router.post('/:id/comments', auth, async (req, res) => {
     }
 });
 
-// Get all comments for a ticket
 router.get('/:id/comments', auth, async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);

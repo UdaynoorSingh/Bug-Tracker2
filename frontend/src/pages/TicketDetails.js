@@ -1,40 +1,102 @@
-// src/pages/TicketDetails.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// import { useAuth } from '../contexts/AuthContext';
 import Modal from 'react-modal';
-import API_URL from '../API_URL'
+import { 
+  FiPaperclip, 
+  FiImage,
+  FiFileText,
+  FiFile,
+  FiDownload
+} from 'react-icons/fi';
+import { format } from 'date-fns';
+import API_URL from '../API_URL';
 
-function buildThread(comments) {
-    const map = {};
-    comments.forEach(c => map[c._id] = { ...c, replies: [] });
-    const roots = [];
-    comments.forEach(c => {
-        if (c.parentId) {
-            map[c.parentId]?.replies.push(map[c._id]);
-        } else {
-            roots.push(map[c._id]);
-        }
-    });
-    return roots;
-}
+const Comment = ({ comment, onReply, depth = 0 }) => {
+  const getFileIcon = (filename) => {
+    const ext = filename.split('.').pop().toLowerCase();
+    switch(ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FiImage className="text-blue-500" />;
+      case 'pdf':
+        return <FiFileText className="text-red-500" />;
+      case 'doc':
+      case 'docx':
+        return <FiFileText className="text-blue-600" />;
+      case 'xls':
+      case 'xlsx':
+        return <FiFileText className="text-green-600" />;
+      default:
+        return <FiFile className="text-gray-500" />;
+    }
+  };
 
-function CommentThread({ comments, onReply }) {
-    return comments.map(comment => (
-        <div key={comment._id} style={{ marginLeft: comment.parentId ? 20 : 0 }} className="mb-2">
-            <div className="text-xs text-gray-500">
-                <b>{comment.userId}</b> {/* Replace with user name if you populate */}
-                <span> {new Date(comment.createdAt).toLocaleString()}</span>
-            </div>
-            <div className="mb-1">{comment.text}</div>
-            <button className="text-blue-600 text-xs mb-1" onClick={() => onReply(comment._id)}>Reply</button>
-            {comment.replies && comment.replies.length > 0 && (
-                <CommentThread comments={comment.replies} onReply={onReply} />
-            )}
+  return (
+    <div 
+      className={`mb-4 p-4 bg-white rounded-lg shadow ${depth > 0 ? 'ml-6 border-l-2 border-gray-200' : ''}`}
+      style={{ marginLeft: `${depth * 1.5}rem` }}
+    >
+      <div className="flex items-center mb-2">
+        <div className="font-semibold text-gray-800">
+          {comment.userId?.name || 'Unknown User'}
         </div>
-    ));
-}
+        <span className="mx-2 text-gray-400">•</span>
+        <div className="text-sm text-gray-500">
+          {format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+        </div>
+      </div>
+      
+      <p className="text-gray-700 mb-2 whitespace-pre-wrap">{comment.text}</p>
+      
+      {comment.attachments?.length > 0 && (
+        <div className="mt-3">
+          <div className="space-y-2">
+            {comment.attachments.map((file, index) => (
+              <div key={index} className="flex items-center">
+                <span className="mr-2">
+                  {getFileIcon(file)}
+                </span>
+                <a
+                  href={`${API_URL}/${file}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm flex items-center"
+                  download
+                >
+                  {file.split('/').pop()}
+                  <FiDownload className="ml-1 text-xs" />
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button 
+        onClick={() => onReply(comment._id)}
+        className="text-blue-600 text-xs mt-2 hover:underline flex items-center"
+      >
+        Reply
+      </button>
+
+      {comment.replies?.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {comment.replies.map(reply => (
+            <Comment 
+              key={reply._id} 
+              comment={reply} 
+              onReply={onReply}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TicketDetails = () => {
     const { id } = useParams();
@@ -44,19 +106,25 @@ const TicketDetails = () => {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
-    // const { user } = useAuth();
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editFields, setEditFields] = useState({ title: '', description: '', priority: '', status: '', assignee: '' });
+    const [editFields, setEditFields] = useState({ 
+      title: '', 
+      description: '', 
+      priority: '', 
+      status: '', 
+      assignee: '' 
+    });
     const [teamMembers, setTeamMembers] = useState([]);
     const [comments, setComments] = useState([]);
     const [replyTo, setReplyTo] = useState(null);
+    const [files, setFiles] = useState([]);
+    const [fileUploading, setFileUploading] = useState(false);
 
     useEffect(() => {
         fetchTicket();
         fetchComments();
-        const interval = setInterval(fetchComments, 3000); // Poll every 3s
+        const interval = setInterval(fetchComments, 3000);
         return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     useEffect(() => {
@@ -82,15 +150,27 @@ const TicketDetails = () => {
             const response = await axios.get(`${API_URL}/api/comments/ticket/${id}`);
             setComments(response.data);
         } catch (error) {
-            // Optionally handle error
+            console.error('Failed to fetch comments', error);
         }
+    };
+
+    const buildCommentThread = (comments) => {
+      const map = {};
+      comments.forEach(c => map[c._id] = { ...c, replies: [] });
+      const roots = [];
+      comments.forEach(c => {
+          if (c.parentId) {
+              map[c.parentId]?.replies.push(map[c._id]);
+          } else {
+              roots.push(map[c._id]);
+          }
+      });
+      return roots;
     };
 
     const handleStatusChange = async (newStatus) => {
         try {
-            await axios.put(`${API_URL}/api/tickets/${id}`, {
-                status: newStatus,
-            });
+            await axios.put(`${API_URL}/api/tickets/${id}`, { status: newStatus });
             setTicket({ ...ticket, status: newStatus });
         } catch (error) {
             setError('Failed to update ticket status');
@@ -99,33 +179,55 @@ const TicketDetails = () => {
 
     const handlePriorityChange = async (newPriority) => {
         try {
-            await axios.put(`${API_URL}/api/tickets/${id}`, {
-                priority: newPriority,
-            });
+            await axios.put(`${API_URL}/api/tickets/${id}`, { priority: newPriority });
             setTicket({ ...ticket, priority: newPriority });
         } catch (error) {
             setError('Failed to update ticket priority');
         }
     };
 
+    const handleFileChange = (e) => {
+        setFiles([...e.target.files]);
+    };
+
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        if (!comment.trim()) return;
+        if (!comment.trim() && files.length === 0) return;
+        
         try {
             setSubmitting(true);
+            
+            let fileUrls = [];
+            if (files.length > 0) {
+                setFileUploading(true);
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+                
+                const uploadResponse = await axios.post(
+                  `${API_URL}/api/comments/upload`, 
+                  formData,
+                  { headers: { 'Content-Type': 'multipart/form-data' } }
+                );
+                fileUrls = uploadResponse.data.fileUrls;
+            }
+            
             await axios.post(`${API_URL}/api/comments`, {
                 ticketId: id,
                 text: comment,
-                parentId: replyTo
+                parentId: replyTo,
+                attachments: fileUrls
             });
+            
             setComment('');
+            setFiles([]);
             setReplyTo(null);
-            fetchComments(); // Refresh comments
+            fetchComments();
         } catch (error) {
             setError('Failed to add comment');
             console.error(error?.response?.data || error);
         } finally {
             setSubmitting(false);
+            setFileUploading(false);
         }
     };
 
@@ -139,6 +241,7 @@ const TicketDetails = () => {
         });
         setEditModalOpen(true);
     };
+
     const closeEditModal = () => setEditModalOpen(false);
 
     const handleEditChange = (field, value) => {
@@ -166,7 +269,7 @@ const TicketDetails = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
     }
@@ -183,7 +286,7 @@ const TicketDetails = () => {
                     <div className="mt-4 flex md:mt-0 md:ml-4 space-x-2">
                         <button
                             onClick={() => navigate(`/projects/${ticket?.project}`)}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             Back to Project
                         </button>
@@ -210,7 +313,7 @@ const TicketDetails = () => {
                                 <select
                                     value={ticket?.status}
                                     onChange={(e) => handleStatusChange(e.target.value)}
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                                 >
                                     <option value="todo">To Do</option>
                                     <option value="in-progress">In Progress</option>
@@ -223,7 +326,7 @@ const TicketDetails = () => {
                                 <select
                                     value={ticket?.priority}
                                     onChange={(e) => handlePriorityChange(e.target.value)}
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                                 >
                                     <option value="low">Low</option>
                                     <option value="medium">Medium</option>
@@ -243,33 +346,74 @@ const TicketDetails = () => {
                         <div className="mt-6">
                             <h3 className="text-lg font-medium text-gray-900">Comments</h3>
                             <div className="mt-4 space-y-4">
-                                <CommentThread comments={buildThread(comments)} onReply={setReplyTo} />
+                                {buildCommentThread(comments).map(comment => (
+                                  <Comment 
+                                    key={comment._id} 
+                                    comment={comment} 
+                                    onReply={setReplyTo}
+                                  />
+                                ))}
                             </div>
                             <form onSubmit={handleCommentSubmit} className="mt-4 flex flex-col gap-2">
                                 {replyTo && (
-                                    <div className="text-xs text-blue-600">Replying to comment {replyTo} <button type="button" onClick={() => setReplyTo(null)} className="ml-2 text-red-500">Cancel</button></div>
+                                    <div className="text-xs text-blue-600">
+                                      Replying to comment {replyTo} 
+                                      <button 
+                                        type="button" 
+                                        onClick={() => setReplyTo(null)} 
+                                        className="ml-2 text-red-500 hover:underline"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
                                 )}
                                 <div>
-                                    <label htmlFor="comment" className="sr-only">
-                                        Add a comment
-                                    </label>
+                                    <label htmlFor="comment" className="sr-only">Add a comment</label>
                                     <textarea
                                         id="comment"
                                         name="comment"
                                         rows={3}
                                         value={comment}
                                         onChange={(e) => setComment(e.target.value)}
-                                        className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
                                         placeholder="Add a comment..."
                                     />
                                 </div>
+                                
+                                <div className="flex items-center gap-2">
+                                    <label className="cursor-pointer p-2 rounded-full hover:bg-gray-100">
+                                        <FiPaperclip className="text-gray-500" />
+                                        <input
+                                            type="file"
+                                            multiple
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                            accept=".txt,.pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                        />
+                                    </label>
+                                    <span className="text-xs text-gray-500">
+                                        {files.length > 0 ? `${files.length} file(s) selected` : 'Attach files'}
+                                    </span>
+                                </div>
+                                
+                                {files.length > 0 && (
+                                    <div className="text-xs text-gray-600 space-y-1">
+                                        {Array.from(files).map((file, index) => (
+                                            <div key={index} className="flex items-center">
+                                              <FiFile className="mr-1 text-gray-400" />
+                                              {file.name}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
                                 <div className="flex justify-end">
                                     <button
                                         type="submit"
-                                        disabled={submitting || !comment.trim()}
-                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                                        disabled={submitting || fileUploading || (!comment.trim() && files.length === 0)}
+                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                                     >
-                                        {submitting ? 'Posting...' : 'Add Comment'}
+                                        {submitting || fileUploading ? 'Uploading...' : 'Add Comment'}
                                     </button>
                                 </div>
                             </form>
@@ -374,4 +518,4 @@ const TicketDetails = () => {
     );
 };
 
-export default TicketDetails; 
+export default TicketDetails;

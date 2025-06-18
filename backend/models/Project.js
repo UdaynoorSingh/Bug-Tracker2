@@ -1,34 +1,34 @@
 // models/Project.js
 const mongoose = require('mongoose');
 const projectSchema = new mongoose.Schema({
-    name: {
+    name:{
         type: String,
-        required: [true, 'Project name is required'],
+        required:[true, 'Project name is required'],
         trim: true
     },
-    description: {
+    description:{
         type: String,
-        required: [true, 'Project description is required']
+        required:[true, 'Project description is required']
     },
     status: {
         type: String,
         enum: ['Active', 'On Hold', 'Completed', 'Cancelled'],
         default: 'Active'
     },
-    owner: {
+    owner:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    teamMembers: [
+    teamMembers:[
         {
-            name: {
+            name:{
                 type: String,
-                required: [false, 'Team member name is not required']
+                required: [false,'Team member name is not required']
             },
             email: {
                 type: String,
-                required: [true, 'Team member email is required'],
+                required: [true,'Team member email is required'],
                 trim: true,
                 lowercase: true
             }
@@ -38,22 +38,21 @@ const projectSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    
     updatedAt:{
         type: Date,
         default: Date.now
     }
 });
 
-// Update the updatedAt timestamp before saving
-projectSchema.pre('save', function (next) {
+projectSchema.pre('save', function (next){
     this.updatedAt = Date.now();
     next();
 });
 
-// Remove sensitive data when converting to JSON
 projectSchema.methods.toJSON = function () {
     const project = this.toObject();
     return project;
 };
 
-module.exports = mongoose.model('Project', projectSchema); 
+module.exports =mongoose.model('Project',projectSchema); 

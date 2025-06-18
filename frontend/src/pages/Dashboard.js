@@ -14,7 +14,6 @@ const Dashboard = () => {
     const [error, setError] = useState('');
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
-    // New state variables for project editing
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedProjectForEdit, setSelectedProjectForEdit] = useState(null);
@@ -70,8 +69,8 @@ const Dashboard = () => {
     };
 
     const handleDeleteClick = (e, project) => {
-        e.preventDefault(); // Prevent navigation
-        e.stopPropagation(); // Prevent event bubbling
+        e.preventDefault(); 
+        e.stopPropagation(); 
         setSelectedProjectForEdit(project);
         setDeleteModalOpen(true);
     };
@@ -103,7 +102,6 @@ const Dashboard = () => {
         try {
             await axios.post(`${API_URL}/api/projects/${selectedProjectForEdit._id}/members`, newTeamMember);
             setNewTeamMember({ name: '', email: '' });
-            // Refresh team members
             const { data } = await axios.get(`${API_URL}/api/projects/${selectedProjectForEdit._id}`);
             setEditTeamMembers(data.teamMembers || []);
             fetchProjects();
@@ -115,7 +113,6 @@ const Dashboard = () => {
     const handleRemoveTeamMember = async (email) => {
         try {
             await axios.delete(`${API_URL}/api/projects/${selectedProjectForEdit._id}/members/${email}`);
-            // Refresh team members
             const { data } = await axios.get(`${API_URL}/api/projects/${selectedProjectForEdit._id}`);
             setEditTeamMembers(data.teamMembers || []);
             fetchProjects();
@@ -138,13 +135,11 @@ const Dashboard = () => {
         <div className="min-h-screen bg-gray-100 flex">
             <Sidebar onLogout={handleLogout} />
             <div className="flex-1 flex flex-col">
-                {/* Topbar for mobile */}
                 <nav className="md:hidden bg-white shadow px-4 py-3 flex justify-between items-center">
                     <h1 className="text-xl font-bold text-gray-900">Bug Tracker</h1>
                     <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">Logout</button>
                 </nav>
                 <main className="flex-1 p-6">
-                    {/* Breadcrumbs */}
                     <nav className="text-sm mb-4" aria-label="Breadcrumb">
                         <ol className="list-reset flex text-gray-500">
                             <li><Link to="/dashboard" className="hover:underline text-blue-600">Dashboard</Link></li>
@@ -156,7 +151,6 @@ const Dashboard = () => {
                             )}
                         </ol>
                     </nav>
-                    {/* Project Selector */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                         <h2 className="text-2xl font-bold text-gray-900">Your Projects</h2>
                         <div className="flex gap-2 items-center">
@@ -232,7 +226,6 @@ const Dashboard = () => {
                 </main>
             </div>
 
-            {/* Edit Project Modal */}
             <Modal
                 isOpen={editModalOpen}
                 onRequestClose={() => setEditModalOpen(false)}
@@ -364,7 +357,6 @@ const Dashboard = () => {
                 </div>
             </Modal>
 
-            {/* Delete Confirmation Modal */}
             <Modal
                 isOpen={deleteModalOpen}
                 onRequestClose={() => setDeleteModalOpen(false)}

@@ -10,7 +10,8 @@ import ProjectDetails from './pages/ProjectDetails';
 import CreateProject from './pages/CreateProject';
 import CreateTicket from './pages/CreateTicket';
 import TicketDetails from './pages/TicketDetails';
-import AcceptInvitePage from './pages/AcceptInvitePage'; 
+import AcceptInvitePage from './pages/AcceptInvitePage';
+import VerifyEmailPage from './pages/Verify'; 
 
 function App() {
     return (
@@ -23,7 +24,9 @@ function App() {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
-                        <Route path="/accept-invite/:token" element={<AcceptInvitePage />} /> 
+                        <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
+                        <Route path="/verify-email" element={<VerifyEmailPage />} />
+                        
                         <Route
                             path="/"
                             element={

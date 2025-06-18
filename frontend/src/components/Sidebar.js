@@ -1,18 +1,16 @@
 // src/components/Sidebar.js
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // import the auth hook
+import { useAuth } from '../contexts/AuthContext'; 
 
 const Sidebar = ({ onLogout }) => {
     const location = useLocation();
-    const { currentUser } = useAuth(); // get current user info
+    const { currentUser } = useAuth(); 
 
     return (
         <aside className="bg-white w-64 min-h-screen border-r hidden md:block">
             <div className="p-6">
                 <h2 className="text-2xl font-bold text-blue-700">Bug Tracker</h2>
-
-                {/* Display user info if available */}
                 {currentUser && (
                     <div className="mt-3 text-sm text-gray-700">
                         <p className="font-bold">{currentUser.name}</p>

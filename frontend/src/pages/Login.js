@@ -18,7 +18,6 @@ const Login = () => {
             setLoading(true);
             await login(email, password);
 
-            // 🔁 Check if there's a pending invite token
             const inviteToken = localStorage.getItem('pendingInviteToken');
             if (inviteToken) {
                 localStorage.removeItem('pendingInviteToken');

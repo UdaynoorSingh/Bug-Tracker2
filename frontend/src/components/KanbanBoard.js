@@ -4,8 +4,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
 import API_URL from '../API_URL'
 
-// StrictMode compatible wrapper
-const StrictModeDroppable = ({ children, ...props }) => {
+const StrictModeDroppable = ({children, ...props }) => {
     const [enabled, setEnabled] = useState(false);
     useEffect(() => {
         const animation = requestAnimationFrame(() => setEnabled(true));
@@ -20,45 +19,40 @@ const StrictModeDroppable = ({ children, ...props }) => {
     return <Droppable {...props}>{children}</Droppable>;
 };
 
-const KanbanBoard = ({ projectId }) => {
+const KanbanBoard =({ projectId }) =>{
     const [tickets, setTickets] = useState({
         'todo': [],
         'in-progress': [],
         'done': []
     });
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [loading, setLoading] =useState(true);
+    const [error, setError]= useState(null);
 
     useEffect(() => {
         fetchTickets();
     }, [projectId]);
 
-    const fetchTickets = async () => {
-        try {
+    const fetchTickets=async () => {
+        try{
             setLoading(true);
             const response = await axios.get(`${API_URL}/api/tickets/project/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+            }
             });
 
-            // Validate and group tickets
             const groupedTickets = response.data.reduce((acc, ticket) => {
-                // Validate ticket data
-                if (!ticket || !ticket._id) {
+                if(!ticket || !ticket._id) {
                     console.warn('Invalid ticket data:', ticket);
                     return acc;
                 }
-
-                // Normalize status
                 let status = (ticket.status || 'todo').toLowerCase().replace(/\s+/g, '-');
-                if (!['todo', 'in-progress', 'done'].includes(status)) {
+                if(!['todo', 'in-progress', 'done'].includes(status)) {
                     status = 'todo';
                 }
 
-                // Ensure the ticket has all required fields
-                const normalizedTicket = {
-                    _id: ticket._id.toString(), // Convert ObjectId to string
+                const normalizedTicket ={
+                    _id: ticket._id.toString(), 
                     title: ticket.title || 'Untitled',
                     description: ticket.description || '',
                     priority: ticket.priority || 'medium',
@@ -78,10 +72,12 @@ const KanbanBoard = ({ projectId }) => {
 
             setTickets(groupedTickets);
             setError(null);
-        } catch (error) {
+        }
+         catch(error) {
             console.error('Error fetching tickets:', error);
             setError('Failed to load tickets');
-        } finally {
+        }
+         finally{
             setLoading(false);
         }
     };
@@ -89,38 +85,30 @@ const KanbanBoard = ({ projectId }) => {
     const onDragEnd = async (result) => {
         const { source, destination, draggableId } = result;
 
-        // Validate drag result
-        if (!destination || !draggableId) return;
+        if(!destination || !draggableId) return;
 
-        // If dropped in the same place
-        if (
+        if(
             source.droppableId === destination.droppableId &&
             source.index === destination.index
         ) return;
 
-        try {
-            // Create new ticket arrays
+        try{
             const sourceColumn = [...tickets[source.droppableId]];
             const destColumn = source.droppableId === destination.droppableId
                 ? sourceColumn
                 : [...tickets[destination.droppableId]];
 
-            // Find the ticket being moved
             const ticketIndex = sourceColumn.findIndex(ticket => ticket._id === draggableId);
             if (ticketIndex === -1) {
                 throw new Error(`Ticket with id ${draggableId} not found`);
             }
 
-            // Remove ticket from source
             const [movedTicket] = sourceColumn.splice(ticketIndex, 1);
 
-            // Update ticket status
             movedTicket.status = destination.droppableId;
 
-            // Add ticket to destination
             destColumn.splice(destination.index, 0, movedTicket);
 
-            // Update state
             const newTickets = {
                 ...tickets,
                 [source.droppableId]: sourceColumn,
@@ -128,7 +116,6 @@ const KanbanBoard = ({ projectId }) => {
             };
             setTickets(newTickets);
 
-            // Update ticket status in backend
             await axios.patch(
                 `${API_URL}/api/tickets/${draggableId}`,
                 { status: destination.droppableId },
@@ -140,7 +127,6 @@ const KanbanBoard = ({ projectId }) => {
             );
         } catch (error) {
             console.error('Error updating ticket:', error);
-            // Only re-fetch if the backend update fails
             fetchTickets();
         }
     };

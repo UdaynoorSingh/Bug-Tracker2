@@ -17,7 +17,6 @@ const CreateTicket = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Fetch project to get team members
         const fetchProject = async () => {
             try {
                 const response = await axios.get(`${API_URL}/api/projects/${projectId}`);

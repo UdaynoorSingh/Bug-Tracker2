@@ -10,7 +10,6 @@ const ProjectInvitation = require('../models/ProjectInvitation');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
-// Helper: send invitation email
 async function sendInvitationEmail(email, project, token) {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -19,7 +18,7 @@ async function sendInvitationEmail(email, project, token) {
             pass: process.env.EMAIL_PASS
         }
     });
-    const acceptUrl = `bug-tracker2.vercel.app/accept-invite/${token}`;
+    const acceptUrl = `bug-tracker2.vercel.app//accept-invite/${token}`;
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
@@ -28,12 +27,10 @@ async function sendInvitationEmail(email, project, token) {
     });
 }
 
-// Shared: handle new team member invitations
 async function handleTeamInvitations(project, newMembers = []) {
     for (const member of newMembers) {
         const alreadyInTeam = project.teamMembers.some(m => m.email === member.email);
 
-        // Delete any stale pending invitations
         await ProjectInvitation.deleteMany({
             projectId: project._id,
             email: member.email,
@@ -60,8 +57,7 @@ async function handleTeamInvitations(project, newMembers = []) {
     }
 }
 
-// Create project
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, async (req, res) =>{
     try {
         const { name, description, status, teamMembers } = req.body;
 
@@ -69,12 +65,11 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).json({ message: 'Name and description are required' });
         }
 
-        // 🔒 Check for duplicate project name (by owner or team member)
         const existingProject = await Project.findOne({
             name,
             $or: [
-                { owner: req.user.userId },
-                { 'teamMembers.email': req.user.email }
+                {owner: req.user.userId},
+                {'teamMembers.email': req.user.email}
             ]
         });
 
@@ -95,14 +90,12 @@ router.post('/', auth, async (req, res) => {
         await project.populate('owner', 'name email');
         res.status(201).json(project);
 
-    } catch (error) {
+    } 
+    catch (error){
         console.error('Create project error:', error);
         res.status(500).json({ message: 'Error creating project' });
     }
 });
-
-
-// Get all projects for user
 router.get('/', auth, async (req, res) => {
     try {
         const projects = await Project.find({
@@ -118,7 +111,6 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// Get single project
 router.get('/:id', auth, async (req, res) => {
     try {
         const project = await Project.findOne({
@@ -136,7 +128,6 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Update project
 router.put('/:id', auth, async (req, res) => {
     try {
         const { name, description, status, teamMembers } = req.body;
@@ -167,7 +158,6 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete project
 router.delete('/:id', auth, async (req, res) => {
     try {
         const project = await Project.findOne({ _id: req.params.id, owner: req.user.userId });
@@ -184,7 +174,6 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// Add team member
 router.post('/:id/members', auth, async (req, res) => {
     try {
         const { email, name } = req.body;
@@ -204,7 +193,6 @@ router.post('/:id/members', auth, async (req, res) => {
     }
 });
 
-// Remove team member
 router.delete('/:id/members/:email', auth, async (req, res) => {
     try {
         const project = await Project.findOne({ _id: req.params.id, owner: req.user.userId });
@@ -218,7 +206,6 @@ router.delete('/:id/members/:email', auth, async (req, res) => {
     }
 });
 
-// Accept invite
 router.post('/accept-invite/:token', auth, async (req, res) => {
     try {
         const invite = await ProjectInvitation.findOne({ token: req.params.token, accepted: false });
