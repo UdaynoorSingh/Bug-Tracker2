@@ -22,7 +22,6 @@ const VerifyEmailPage = () => {
           throw new Error(data.message || 'Verification failed');
         }
 
-        // If using token in URL
         if (token) {
           await loginWithToken(token);
         }

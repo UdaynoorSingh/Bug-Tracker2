@@ -55,7 +55,6 @@ const ticketSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt timestamp before saving
 ticketSchema.pre('save', function (next){
     this.updatedAt = Date.now();
     next();

@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
             email,
             password,
             verificationToken,
-            verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours expiry
+            verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, 
         });
 
         await user.save();
@@ -75,14 +75,12 @@ router.get('/verify-email', async (req, res) => {
             console.error('Error saving user:', err);
         }
 
-        // Generate auth token
         const authToken = jwt.sign(
             { userId: user._id },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Redirect to frontend with token
         const redirectUrl = new URL(`https://bug-tracker2.vercel.app/verify-success`);
         redirectUrl.searchParams.set('token', authToken);
         res.redirect(redirectUrl.toString());
