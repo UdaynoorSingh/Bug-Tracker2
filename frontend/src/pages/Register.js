@@ -24,7 +24,7 @@ const Register = () => {
         try {
             setError('');
             setLoading(true);
-            await register(email, password, name);
+            await register(name, email, password);
             navigate('/');
         } catch (error) {
             setError('Failed to create an account. Please try again.');
