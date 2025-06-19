@@ -138,10 +138,12 @@ const Register = () => {
                             </button>
                         </div>
                     </form>
-                    *After doing registeration you will be redirected to login page but before login you have to verify you by clicking on the verification link on your gmail*
+                   
                 </div>
             </div>
+             *After doing registeration you will be redirected to login page but before login you have to verify you by clicking on the verification link on your gmail*
         </div>
+        
     );
 };
 
