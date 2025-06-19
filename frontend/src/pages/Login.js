@@ -2,12 +2,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showResend, setShowResend] = useState(false);
+    const [resendMessage, setResendMessage] = useState('');
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -27,9 +30,26 @@ const Login = () => {
             }
 
         } catch (error) {
-            setError('Failed to sign in. Please check your credentials.');
+            if (error.response?.status === 403 && 
+                error.response?.data?.message === 'Please verify your email before logging in.') {
+                setError('Please verify your email address first.');
+                setShowResend(true);
+            } else {
+                setError(error.response?.data?.message || 'Failed to sign in. Please check your credentials.');
+            }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        try {
+            setResendMessage('');
+            const response = await axios.post('/api/auth/reverify', { email });
+            setResendMessage(response.data.message);
+            setShowResend(false);
+        } catch (error) {
+            setResendMessage(error.response?.data?.message || 'Failed to resend verification email');
         }
     };
 
@@ -54,6 +74,17 @@ const Login = () => {
                             {error}
                         </div>
                     )}
+                    
+                    {resendMessage && (
+                        <div className={`mb-4 px-4 py-3 rounded ${
+                            resendMessage.includes('successfully') 
+                                ? 'bg-green-50 border border-green-200 text-green-600' 
+                                : 'bg-red-50 border border-red-200 text-red-600'
+                        }`}>
+                            {resendMessage}
+                        </div>
+                    )}
+
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -103,6 +134,26 @@ const Login = () => {
                             </button>
                         </div>
                     </form>
+
+                    {showResend && (
+                        <div className="mt-4 text-center text-sm">
+                            <p className="text-gray-600">
+                                Didn't receive verification email?{' '}
+                                <button 
+                                    onClick={handleResendVerification}
+                                    className="font-medium text-blue-600 hover:text-blue-500"
+                                >
+                                    Resend now
+                                </button>
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="mt-4 text-center text-sm">
+                        <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                            Forgot your password?
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
