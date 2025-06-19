@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose'; // Using jose instead of jsonwebtoken
 import API_URL from '../API_URL';
 
 const AuthContext = createContext(null);
@@ -55,18 +55,23 @@ export const AuthProvider = ({ children }) => {
 
     const loginWithToken = async (token) => {
         try {
-            // Verify token without checking expiration (already verified by backend)
-            const decoded = jwt.decode(token);
+            // Verify token structure (basic check without signature verification)
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                throw new Error('Invalid token structure');
+            }
             
-            if (!decoded) {
-                throw new Error('Invalid token');
+            // Decode payload
+            const payload = JSON.parse(atob(parts[1]));
+            if (!payload.userId) {
+                throw new Error('Invalid token payload');
             }
 
             // Set auth headers
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-            // Fetch user data
+            // Fetch fresh user data
             const response = await axios.get(`${API_URL}/api/auth/me`);
             setCurrentUser(response.data.user);
             
@@ -74,6 +79,18 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Token login failed:', error);
             handleAuthError();
+            throw error;
+        }
+    };
+
+    // For when you need to verify tokens properly (e.g., in API routes)
+    const verifyToken = async (token) => {
+        try {
+            const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+            const { payload } = await jwtVerify(token, secret);
+            return payload;
+        } catch (error) {
+            console.error('Token verification failed:', error);
             throw error;
         }
     };
@@ -113,6 +130,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         loginWithToken,
+        verifyToken, // Add this if needed for any token verification
         register,
         logout,
     };
