@@ -11,15 +11,15 @@ const { cleanupOrphanedFiles } = require('./utils/cleanupUploads');
 
 const app = express();
 
-// Enhanced CORS configuration
 const allowedOrigins = [
   'https://bug-tracker2.vercel.app',
-  'http://localhost:3000' // For local development
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -27,12 +27,11 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests
 app.options('*', cors(corsOptions));
 
 app.set('trust proxy', 1);

@@ -29,16 +29,18 @@ const Login = () => {
                 navigate('/');
             }
 
-        } catch (error) {
-     console.log('Full error response:', error.response); 
+        } 
+catch (error) {
+  console.log('Login error:', error.response?.data);
   
-      if (error.response?.status === 403) {
-       setError('Please verify your email address first.');
-     setShowResend(true);
-       } else {
+  if (error.response?.status === 403) {
+    setError('Please verify your email address first.');
+    setShowResend(true);
+  } else {
     setError(error.response?.data?.message || 'Failed to sign in. Please check your credentials.');
-       }
-     }
+  }
+  setLoading(false);
+}
         finally {
             setLoading(false);
         }

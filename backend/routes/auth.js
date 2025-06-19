@@ -19,7 +19,6 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-       // In auth.js registration route
          const verificationToken = crypto.randomBytes(32).toString('hex');
          const user = new User({
            name,
@@ -46,52 +45,47 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// Add this at the top with other requires
+const { URL } = require('url');
+
 router.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
     
     if (!token) {
-      return res.status(400).json({ 
-        code: 'MISSING_TOKEN',
-        message: 'Verification token is required' 
-      });
+      return res.redirect(`bug-tracker2.vercel.app/verify-error?error=missing_token`);
     }
 
     const user = await User.findOne({ verificationToken: token });
     
     if (!user) {
-      return res.status(400).json({ 
-        code: 'INVALID_TOKEN',
-        message: 'Invalid verification token' 
-      });
+      return res.redirect(`bug-tracker2.vercel.app/verify-error?error=invalid_token`);
     }
 
     if (user.verificationTokenExpires < Date.now()) {
-      return res.status(400).json({ 
-        code: 'EXPIRED_TOKEN',
-        message: 'Verification link has expired',
-        solution: 'Please request a new verification email'
-      });
+      return res.redirect(`bug-tracker2.vercel.app/verify-error?error=expired_token`);
     }
 
     user.verified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
-    
-    // Return JSON response instead of redirect
-    res.json({ 
-      success: true,
-      message: 'Email verified successfully',
-      redirectUrl: `${process.env.FRONTEND_URL}/verify-success`
-    });
 
+    // Generate auth token
+    const authToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Redirect to frontend with token
+    const redirectUrl = new URL(`bug-tracker2.vercel.app/verify-success`);
+    redirectUrl.searchParams.set('token', authToken);
+    res.redirect(redirectUrl.toString());
+    
   } catch (error) {
     console.error('Verification error:', error);
-    res.status(500).json({ 
-      code: 'SERVER_ERROR',
-      message: 'Failed to verify email'
-    });
+    res.redirect(`bug-tracker2.vercel.app/verify-error?error=server_error`);
   }
 });
 
