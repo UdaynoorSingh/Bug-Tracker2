@@ -50,38 +50,48 @@ router.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
     
-    console.log('Verification attempt with token:', token);
-    
     if (!token) {
-      console.log('No token provided');
-      return res.redirect(`${process.env.FRONTEND_URL}/verify-error?error=missing_token`);
+      return res.status(400).json({ 
+        code: 'MISSING_TOKEN',
+        message: 'Verification token is required' 
+      });
     }
 
     const user = await User.findOne({ verificationToken: token });
     
     if (!user) {
-      console.log('Invalid token:', token);
-      return res.redirect(`${process.env.FRONTEND_URL}/verify-error?error=invalid_token`);
+      return res.status(400).json({ 
+        code: 'INVALID_TOKEN',
+        message: 'Invalid verification token' 
+      });
     }
 
     if (user.verificationTokenExpires < Date.now()) {
-      console.log('Expired token for user:', user.email);
-      return res.redirect(`${process.env.FRONTEND_URL}/verify-error?error=expired_token`);
+      return res.status(400).json({ 
+        code: 'EXPIRED_TOKEN',
+        message: 'Verification link has expired',
+        solution: 'Please request a new verification email'
+      });
     }
 
-    console.log('Verifying user:', user.email);
-    
     user.verified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
-
-    console.log('User verified successfully:', user.email);
     
-    res.redirect(`${process.env.FRONTEND_URL}/verify-success`);
+    // Return JSON response instead of redirect
+    res.json({ 
+      success: true,
+      message: 'Email verified successfully',
+      redirectUrl: `${process.env.FRONTEND_URL}/verify-success`
+    });
+
   } catch (error) {
     console.error('Verification error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/verify-error?error=server_error`);
+    res.status(500).json({ 
+      code: 'SERVER_ERROR',
+      message: 'Failed to verify email'
+    });
   }
 });
 
@@ -89,26 +99,47 @@ router.post('/resend-verification', async (req, res) => {
   try {
     const { email } = req.body;
     
+    if (!email) {
+      return res.status(400).json({
+        code: 'MISSING_EMAIL',
+        message: 'Email is required'
+      });
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        code: 'USER_NOT_FOUND',
+        message: 'No account found with this email' 
+      });
     }
     
     if (user.verified) {
-      return res.json({ message: 'Email already verified' });
+      return res.json({ 
+        code: 'ALREADY_VERIFIED',
+        message: 'Email is already verified' 
+      });
     }
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
     user.verificationToken = verificationToken;
-    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
     await sendVerificationEmail(email, verificationToken);
     
-    res.json({ message: 'Verification email resent successfully' });
+    res.json({ 
+      success: true,
+      code: 'RESEND_SUCCESS',
+      message: 'New verification email sent successfully'
+    });
+
   } catch (error) {
     console.error('Resend error:', error);
-    res.status(500).json({ message: 'Error resending verification email' });
+    res.status(500).json({
+      code: 'SERVER_ERROR', 
+      message: 'Failed to resend verification email'
+    });
   }
 });
 

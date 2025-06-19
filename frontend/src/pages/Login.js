@@ -30,14 +30,16 @@ const Login = () => {
             }
 
         } catch (error) {
-            if (error.response?.status === 403 && 
-                error.response?.data?.message === 'Please verify your email before logging in.') {
-                setError('Please verify your email address first.');
-                setShowResend(true);
-            } else {
-                setError(error.response?.data?.message || 'Failed to sign in. Please check your credentials.');
-            }
-        } finally {
+     console.log('Full error response:', error.response); 
+  
+      if (error.response?.status === 403) {
+       setError('Please verify your email address first.');
+     setShowResend(true);
+       } else {
+    setError(error.response?.data?.message || 'Failed to sign in. Please check your credentials.');
+       }
+     }
+        finally {
             setLoading(false);
         }
     };
