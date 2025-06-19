@@ -160,6 +160,7 @@ catch (error) {
                     </div>
                 </div>
             </div>
+            *First make sure you verify yourself by clicking on the link sent in sent on your email*
         </div>
     );
 };
